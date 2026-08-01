@@ -257,8 +257,17 @@ body{font-family:-apple-system,BlinkMacSystemFont,'PingFang SC','Helvetica Neue'
   <template v-else-if="view === 'volunteer-setting'">
     <van-nav-bar title="设置高考信息" left-arrow @click-left="back"></van-nav-bar>
     <div class="card">
-      <div class="form-row" @click="showPicker('province')"><span class="label">高考省份</span><span class="value">{{form.province||'请选择'}}</span></div>
-      <div class="form-row" @click="showPicker('year')"><span class="label">高考年份</span><span class="value">{{form.year||'请选择'}}</span></div>
+      <div class="form-row"><span class="label">高考省份</span>
+        <select v-model="form.province" style="border:none;outline:none;font-size:14px;color:var(--text);background:transparent;text-align:right;-webkit-appearance:none;appearance:none">
+          <option value="" disabled>请选择省份</option>
+          <option v-for="p in provinceList" :key="p" :value="p">{{p}}</option>
+        </select>
+      </div>
+      <div class="form-row"><span class="label">高考年份</span>
+        <select v-model="form.year" style="border:none;outline:none;font-size:14px;color:var(--text);background:transparent;text-align:right;-webkit-appearance:none;appearance:none">
+          <option v-for="y in ['2026','2027','2028','2029']" :key="y" :value="y">{{y}}年</option>
+        </select>
+      </div>
       <div class="form-row" style="flex-direction:column;align-items:flex-start;gap:10px">
         <span class="label">选学科</span>
         <div style="width:100%">
@@ -854,6 +863,7 @@ createApp({
       slProvinces: ['福建','北京','上海','广东','江苏','浙江','河南','四川','河北','湖南','湖北','山东'],
       picker: { show: false, type: '', columns: [], title: '' },
       form: { province: '', year: '2029', subjects: [], score: '', rank: '' },
+      provinceList: ['北京','天津','河北','山西','内蒙古','辽宁','吉林','黑龙江','上海','江苏','浙江','安徽','福建','江西','山东','河南','湖北','湖南','广东','广西','海南','重庆','四川','贵州','云南','西藏','陕西','甘肃','青海','宁夏','新疆'],
       uniDetail: null,
       uniSat: null,
       uniAdmissions: [],
@@ -1205,6 +1215,11 @@ createApp({
         this.myVolunteers = JSON.parse(localStorage.getItem('bk_volunteers') || '[]')
       }
       if (view === 'my-favorites') this.loadFavs()
+      if (view === 'volunteer-setting') {
+        // 从已保存的profile加载表单
+        const p = JSON.parse(localStorage.getItem('bk_profile') || '{}')
+        this.form = { province: p.province || '', year: p.year || '2029', subjects: p.subjects || [], score: p.score || '', rank: p.rank || '' }
+      }
       window.scrollTo(0, 0)
     },
     back() { this.view = 'home'; window.scrollTo(0, 0) },
@@ -1263,8 +1278,13 @@ createApp({
       if (type === 'province') { this.picker = { show: true, type, title: '选择省份', columns: ['北京','天津','河北','山西','内蒙古','辽宁','吉林','黑龙江','上海','江苏','浙江','安徽','福建','江西','山东','河南','湖北','湖南','广东','广西','海南','重庆','四川','贵州','云南','西藏','陕西','甘肃','青海','宁夏','新疆'] } }
       else { this.picker = { show: true, type, title: '选择年份', columns: ['2026','2027','2028','2029'] } }
     },
-    onPick({ selectedOptions }) {
-      const val = selectedOptions[0].text
+    onPick({ selectedValues, selectedOptions }) {
+      // Vant 4: selectedValues是值数组, selectedOptions是选项对象数组
+      let val = ''
+      if (selectedValues && selectedValues[0] !== undefined) val = selectedValues[0]
+      else if (selectedOptions && selectedOptions[0]) val = selectedOptions[0].text || selectedOptions[0]
+      if (!val && selectedOptions && selectedOptions[0] && typeof selectedOptions[0] === 'object') val = selectedOptions[0].text
+      if (!val) return vant.showToast('请选择')
       if (this.picker.type === 'province') this.form.province = val
       else this.form.year = val
       this.picker.show = false
@@ -1287,6 +1307,20 @@ createApp({
       const opt = this.form.subjects.filter(s => ['化学','生物','政治','地理'].includes(s))
       if (pri.length !== 1) return vant.showToast('请选择物理或历史')
       if (opt.length !== 2) return vant.showToast('请选择2门任选科目')
+      // 排名自动匹配：用一分一段数据根据分数查位次
+      if (!this.form.rank) {
+        const cat = this.form.subjects.includes('物理') ? '物理类' : '历史类'
+        const provData = this.scoreSegments[this.form.province] || {}
+        const yearData = provData['2024'] || {}
+        const segs = yearData[cat] || []
+        const s = Number(this.form.score)
+        if (segs.length && s) {
+          const found = segs.find(x => s >= x.mn && s <= x.mx)
+          if (found && found.rank && found.rank !== '-') {
+            this.form.rank = String(found.rank).split('~')[1] || String(found.rank)
+          }
+        }
+      }
       localStorage.setItem('bk_profile', JSON.stringify(this.form))
       this.profile = JSON.parse(JSON.stringify(this.form))
       vant.showToast({ type: 'success', message: '已保存' })
