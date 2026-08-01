@@ -113,6 +113,10 @@ body{font-family:-apple-system,BlinkMacSystemFont,'PingFang SC','Helvetica Neue'
     <div class="hero">
       <div class="hero-title">高考帮</div>
       <div class="hero-sub">考同样的分数，上更好的大学</div>
+      <div style="display:flex;gap:10px;margin-top:10px;flex-wrap:wrap">
+        <span style="background:rgba(255,255,255,.2);border-radius:8px;padding:4px 12px;font-size:12px" v-if="countdownDays > 0">⏰ 距{{profile.year || '2029'}}高考还有 {{countdownDays}} 天</span>
+        <span style="background:rgba(255,255,255,.2);border-radius:8px;padding:4px 12px;font-size:12px" v-if="profile.score">{{profile.province}} · {{profile.score}}分</span>
+      </div>
       <div class="hero-card" @click="go('volunteer')">
         <div><div class="hc-title">一键生成志愿方案</div><div class="hc-desc">输入分数，智能推荐冲稳保院校</div></div>
         <span style="color:#fff">›</span>
@@ -196,6 +200,9 @@ body{font-family:-apple-system,BlinkMacSystemFont,'PingFang SC','Helvetica Neue'
       <div style="margin:0 16px 16px;display:flex;gap:10px">
         <van-button type="primary" block round size="large" @click="saveVolunteer">保存志愿表</van-button>
         <van-button plain block round size="large" @click="printVolunteer">打印</van-button>
+      </div>
+      <div style="margin:0 16px 16px">
+        <van-button plain block round size="large" @click="exportCsv">导出CSV（Excel）</van-button>
       </div>
     </template>
     <div style="height:20px"></div>
@@ -292,7 +299,9 @@ body{font-family:-apple-system,BlinkMacSystemFont,'PingFang SC','Helvetica Neue'
   </template>
 
   <template v-else-if="view === 'uni-detail'">
-    <van-nav-bar :title="uniDetail.name" left-arrow @click-left="back"></van-nav-bar>
+    <van-nav-bar :title="uniDetail.name" left-arrow @click-left="back">
+      <template #right><span @click="toggleFav" style="font-size:18px;cursor:pointer">{{isFav ? '⭐' : '☆'}}</span></template>
+    </van-nav-bar>
     <div v-if="uniDetail" class="card" style="margin-top:12px">
       <div class="uni-name-row"><span style="font-size:20px;font-weight:700">{{uniDetail.name}}</span>
         <span v-if="uniDetail.level && uniDetail.level.includes('985')" class="tag tag-985">985</span>
@@ -339,6 +348,11 @@ body{font-family:-apple-system,BlinkMacSystemFont,'PingFang SC','Helvetica Neue'
     <div class="category-bar">
       <span class="cat-tag" :class="{active:!majorCat}" @click="majorCat=''">全部</span>
       <span v-for="c in majorCats" :key="c" class="cat-tag" :class="{active:majorCat===c}" @click="majorCat=c">{{c}}</span>
+    </div>
+    <div style="display:flex;gap:8px;padding:8px 16px;background:#fff;border-bottom:1px solid #f3f4f6">
+      <span class="cat-tag" :class="{active:majorSubject==='物理类'}" @click="majorSubject = (majorSubject==='物理类'?'':'物理类')">物理类可报</span>
+      <span class="cat-tag" :class="{active:majorSubject==='历史类'}" @click="majorSubject = (majorSubject==='历史类'?'':'历史类')">历史类可报</span>
+      <span style="font-size:11px;color:var(--text3);align-self:center">物化生可报96%+专业</span>
     </div>
     <div class="card" style="padding:4px 12px">
       <div class="uni-item" v-for="m in filteredMajors.slice(0,60)" :key="m.name" @click="view='major-detail';selMajor=m.name">
@@ -691,6 +705,44 @@ body{font-family:-apple-system,BlinkMacSystemFont,'PingFang SC','Helvetica Neue'
     </div>
   </template>
 
+  <template v-else-if="view === 'my-favorites'">
+    <van-nav-bar title="我的收藏" left-arrow @click-left="back"></van-nav-bar>
+    <div v-if="favList.length" class="card" style="padding:4px 12px">
+      <div class="uni-item" v-for="u in favList" :key="u.id" @click="goUni(u.id)">
+        <div style="flex:1">
+          <div class="uni-name">{{u.name}}
+            <span v-if="u.level && u.level.includes('985')" class="tag tag-985">985</span>
+            <span v-if="u.level && u.level.includes('211')" class="tag tag-211">211</span></div>
+          <div class="uni-meta">{{u.province}} · {{u.type}}</div>
+        </div>
+        <span @click.stop="unfav(u.id)" style="font-size:18px;cursor:pointer">⭐</span>
+      </div>
+    </div>
+    <div v-else class="card" style="text-align:center;padding:40px 20px">
+      <i class="van-icon van-icon-star-o" style="font-size:48px;color:#c0c4cc"></i>
+      <p style="color:var(--text2);margin:12px 0">还没有收藏院校，去院校详情页点 ☆ 收藏</p>
+      <van-button type="primary" round @click="go('universities')">去查大学</van-button>
+    </div>
+  </template>
+
+  <template v-else-if="view === 'my-tests'">
+    <van-nav-bar title="我的测评记录" left-arrow @click-left="back"></van-nav-bar>
+    <div v-if="testRecordsList.length" class="card" style="padding:4px 12px">
+      <div class="uni-item" v-for="(r, i) in testRecordsList" :key="i" @click="startTest(r.code)">
+        <div style="flex:1">
+          <div class="uni-name">{{r.name}}</div>
+          <div class="uni-meta">{{r.timeText}} · 结果: {{r.result}}</div>
+        </div>
+        <i class="van-icon van-icon-arrow" style="color:#c0c4cc"></i>
+      </div>
+    </div>
+    <div v-else class="card" style="text-align:center;padding:40px 20px">
+      <i class="van-icon van-icon-smile-o" style="font-size:48px;color:#c0c4cc"></i>
+      <p style="color:var(--text2);margin:12px 0">还没有测评记录，去做个测评了解自己吧</p>
+      <van-button type="primary" round @click="go('psychology')">去测评</van-button>
+    </div>
+  </template>
+
   <!-- 底部Tab栏 -->
   <div style="position:fixed;bottom:0;left:0;right:0;z-index:100;background:#fff;border-top:1px solid #f0f0f0;display:flex;padding-bottom:env(safe-area-inset-bottom)">
     <div v-for="tab in tabs" :key="tab.view" @click="go(tab.view)" style="flex:1;text-align:center;padding:8px 0 6px;color:currentView===tab.view?'#2563eb':'#8a8f99';cursor:pointer">
@@ -711,6 +763,7 @@ createApp({
       uniKeyword: '',
       majorKeyword: '',
       majorCat: '',
+      majorSubject: '',
       selMajor: '',
       satKeyword: '',
       rankYear: 2025,
@@ -730,6 +783,7 @@ createApp({
       uniSat: null,
       uniAdmissions: [],
       uniPosts: [],
+      isFav: false,
       testIdx: 0,
       testAnswers: [],
       testFinished: false,
@@ -771,6 +825,8 @@ createApp({
       fakeKeyword: '', fakeResult: null, fakes: [],
       officialNames: [], policyList: [], selPolicy: {}, showPolicy: false,
       myVolunteers: [],
+      countdownDays: 0,
+      favList: [],
       majorRankList: [], careersData: [], careerKeyword: '',
       scheduleList: [
         { time: '10-11月', event: '高考报名（应届/往届）' },
@@ -857,6 +913,8 @@ createApp({
         { name: '专业过来人建议', desc: '1万+学长学姐经验', icon: 'friends-o', path: 'majors', bg: '#fdf4ff', color: '#9333ea' },
         { name: '省批次线', desc: '各省录取控制线', icon: 'bar-chart-o', path: 'scoreline', bg: '#eff6ff', color: '#2563eb' },
         { name: '我的志愿表', desc: '查看已保存的方案', icon: 'orders-o', path: 'my-volunteers', bg: '#fef2f2', color: '#dc2626' },
+        { name: '我的收藏', desc: '收藏的院校', icon: 'star-o', path: 'my-favorites', bg: '#fdf4ff', color: '#9333ea' },
+        { name: '测评记录', desc: '历史测评结果', icon: 'records-o', path: 'my-tests', bg: '#fefce8', color: '#ca8a04' },
       ]
     },
     filteredUnis() {
@@ -875,6 +933,15 @@ createApp({
         const kws = catMap[this.majorCat] || []
         list = list.filter(m => kws.some(k => m.name.includes(k)))
       }
+      // 选科筛选：历史类可报的是文史哲法经管等；物理类可报排除纯文科
+      if (this.majorSubject === '物理类') {
+        const historyOnly = ['历史学','考古','文物','汉语言','汉语国际','哲学','政治学','社会学','新闻','编辑','出版','马克思主义','思想政治教育','中国少数民族']
+        list = list.filter(m => !historyOnly.some(k => m.name.includes(k)))
+      }
+      if (this.majorSubject === '历史类') {
+        const physicsOnly = ['计算机','软件','电子','自动化','电气','机械','土木','建筑','材料','通信','网络','人工智能','数据','数学','物理','化学','生物','临床','口腔','药学','护理','中医','农学','园艺','动物','水利','测绘','车辆','能源','冶金','采矿','地质']
+        list = list.filter(m => !physicsOnly.some(k => m.name.includes(k)))
+      }
       return list.slice(0, 60)
     },
     majorList() {
@@ -886,6 +953,11 @@ createApp({
       let list = this.careersData
       if (this.careerKeyword) list = list.filter(c => c.name.includes(this.careerKeyword.trim()))
       return list
+    },
+    testRecordsList() {
+      const records = JSON.parse(localStorage.getItem('bk_test_records') || '[]')
+      const testNames = { 'BF-2': '大五人格', 'IQ-TEST': 'IQ测试', 'TALENT-TEST': '潜在天赋', 'COLOR-PERSONALITY': '性格色彩', 'TMMS': '情绪智力', 'ROSENBERG-SELF-ESTEEM': '自尊量表', 'SDS': '抑郁自评', 'SAS': '焦虑自评' }
+      return records.slice().reverse().map(r => ({ ...r, name: testNames[r.code] || r.name, timeText: new Date(r.time).toLocaleDateString('zh-CN') }))
     },
     filteredSat() {
       let list = this.satisfaction.filter(s => s.c != null)
@@ -1010,19 +1082,45 @@ createApp({
       this.myVolunteers = list
       vant.showToast('已删除')
     },
+    unfav(id) {
+      const favs = JSON.parse(localStorage.getItem('bk_favorites') || '[]')
+      localStorage.setItem('bk_favorites', JSON.stringify(favs.filter(f => f !== id)))
+      this.loadFavs()
+      vant.showToast('已取消收藏')
+    },
+    loadFavs() {
+      const favs = JSON.parse(localStorage.getItem('bk_favorites') || '[]')
+      this.favList = this.universities.filter(u => favs.includes(u.id))
+    },
     go(view) {
       this.view = view
       if (view === 'my-volunteers') {
         this.myVolunteers = JSON.parse(localStorage.getItem('bk_volunteers') || '[]')
       }
+      if (view === 'my-favorites') this.loadFavs()
       window.scrollTo(0, 0)
     },
     back() { this.view = 'home'; window.scrollTo(0, 0) },
+    toggleFav() {
+      const favs = JSON.parse(localStorage.getItem('bk_favorites') || '[]')
+      const id = this.uniDetail.id
+      if (this.isFav) {
+        localStorage.setItem('bk_favorites', JSON.stringify(favs.filter(f => f !== id)))
+        this.isFav = false
+        vant.showToast('已取消收藏')
+      } else {
+        favs.push(id)
+        localStorage.setItem('bk_favorites', JSON.stringify(favs))
+        this.isFav = true
+        vant.showToast({ type: 'success', message: '已收藏' })
+      }
+    },
     goUni(id) {
       this.uniDetail = this.universities.find(u => u.id === Number(id)) || null
       this.uniSat = this.satisfaction.find(s => s.name === (this.uniDetail && this.uniDetail.name)) || null
       this.uniAdmissions = this.admissions.filter(a => a.ui === Number(id)).sort((a, b) => b.y - a.y)
       this.uniPosts = this.posts.filter(p => p.sc === (this.uniDetail && this.uniDetail.name))
+      this.isFav = JSON.parse(localStorage.getItem('bk_favorites') || '[]').includes(Number(id))
       this.view = 'uni-detail'
       window.scrollTo(0, 0)
     },
@@ -1182,6 +1280,9 @@ createApp({
     useAiDemo() { localStorage.setItem('bk_ai_demo', '1'); this.aiConfigured = true },
     aiAsk(s) { this.aiInput = s; this.aiSend() },
     aiUsePrompt(p) { this.aiInput = p.prompt; this.aiSend() },
+    saveAiHistory() {
+      try { localStorage.setItem('bk_ai_history', JSON.stringify(this.aiMessages.slice(-20))) } catch (e) {}
+    },
     // ===== AI数据联动：根据问题检索本地真实数据 =====
     retrieveData(question) {
       const q = question || ''
@@ -1287,6 +1388,13 @@ createApp({
     async aiSend() {
       const text = this.aiInput.trim()
       if (!text) return
+      // 首次进入时恢复历史
+      if (this.aiMessages.length === 1 && this.aiMessages[0].role === 'ai' && localStorage.getItem('bk_ai_history')) {
+        try {
+          const h = JSON.parse(localStorage.getItem('bk_ai_history'))
+          if (h && h.length) this.aiMessages = h
+        } catch (e) {}
+      }
       this.aiMessages.push({ role: 'user', content: text })
       this.aiInput = ''
 
@@ -1298,6 +1406,7 @@ createApp({
         setTimeout(() => {
           const answer = localData ? '📊 基于本地真实数据：\n\n' + localData + '\n\n（接入API后，AI会基于这些数据做智能分析）' : this.aiDemo(text)
           this.aiMessages.push({ role: 'ai', content: answer })
+          this.saveAiHistory()
         }, 500)
         return
       }
@@ -1328,8 +1437,10 @@ createApp({
         }
         const data = await res.json()
         this.aiMessages.push({ role: 'ai', content: (data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content) || '抱歉，未能获取回答' })
+        this.saveAiHistory()
       } catch (e) {
         this.aiMessages.push({ role: 'ai', content: '调用失败：' + e.message })
+        this.saveAiHistory()
       }
     },
     aiDemo(q) {
@@ -1338,6 +1449,22 @@ createApp({
       if (q.includes('600')) return '600分（物理类）属各省前列（前5%-8%），可冲击中坚985（武大、华科、同济部分专业）、顶尖211（北邮、上财）热门专业。'
       if (q.includes('强基')) return '强基计划是39所双一流A类高校的基础学科招生，聚焦数学、物理、化学、生物等。高考85%+校测15%。'
       return '建议先设置高考信息（省份+分数），我就能给出针对性建议。也可以问我：我的分数能上什么大学？'
+    },
+    exportCsv() {
+      if (!this.profile.score) return vant.showToast('请先设置高考信息')
+      const rows = [['类型', '序号', '院校', '2025录取分', '位次', '录取概率']]
+      const add = (type, arr) => arr.forEach((r, i) => rows.push([type, i + 1, r.name, r.s, r.r || '', r.p + '%']))
+      add('冲', this.volResult.chong.slice(0, 10))
+      add('稳', this.volResult.wen.slice(0, 10))
+      add('保', this.volResult.bao.slice(0, 10))
+      const csv = '\uFEFF' + rows.map(r => r.join(',')).join('\n')
+      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' })
+      const a = document.createElement('a')
+      a.href = URL.createObjectURL(blob)
+      a.download = '高考志愿表_' + this.profile.province + '_' + this.profile.score + '分.csv'
+      a.click()
+      URL.revokeObjectURL(a.href)
+      vant.showToast({ type: 'success', message: '已导出CSV' })
     },
     saveVolunteer() {
       if (!this.profile.score) return vant.showToast('请先设置高考信息')
@@ -1427,6 +1554,14 @@ createApp({
     const ai = JSON.parse(localStorage.getItem('bk_ai_config') || '{}')
     this.aiConfig = ai
     this.aiConfigured = !!(ai.baseUrl && ai.apiKey) || localStorage.getItem('bk_ai_demo') === '1'
+
+    // 高考倒计时（该年6月7日）
+    try {
+      const year = this.profile.year || '2029'
+      const exam = new Date(year + '-06-07T09:00:00')
+      const now = new Date()
+      this.countdownDays = Math.max(0, Math.ceil((exam - now) / 86400000))
+    } catch (e) { this.countdownDays = 0 }
 
     // 注册 Service Worker（PWA离线支持，仅http/https环境）
     if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost' || location.hostname === '127.0.0.1')) {
