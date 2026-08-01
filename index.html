@@ -1,0 +1,817 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#2563eb">
+<title>高考帮 · 志愿填报助手</title>
+<!-- Vant 4 + Vue 3 本地引用（离线可用） -->
+<link rel="stylesheet" href="lib/vant.css">
+<script src="lib/vue.global.prod.js"></script>
+<script src="lib/vant.min.js"></script>
+<style>
+:root{--primary:#2563eb;--bg:#f5f6fa;--card:#fff;--text:#1f2937;--text2:#6b7280;--text3:#9ca3af;--border:#e5e7eb;--danger:#ef4444;--success:#10b981}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+body{font-family:-apple-system,BlinkMacSystemFont,'PingFang SC','Helvetica Neue','Microsoft YaHei',sans-serif;background:var(--bg);color:var(--text);font-size:14px;line-height:1.5}
+.page{min-height:100vh;padding-bottom:70px}
+.card{background:var(--card);border-radius:12px;padding:16px;margin:12px 16px;box-shadow:0 1px 3px rgba(0,0,0,.05)}
+.card-title{font-size:15px;font-weight:600;margin-bottom:12px;display:flex;align-items:center;gap:8px}
+.tag{display:inline-block;padding:2px 8px;border-radius:4px;font-size:11px;line-height:18px;margin-right:4px}
+.tag-985{background:#fee2e2;color:#dc2626}.tag-211{background:#fef3c7;color:#d97706}.tag-syl{background:#dbeafe;color:#2563eb}
+.hero{background:linear-gradient(135deg,#2563eb,#3b82f6 60%,#60a5fa);padding:24px 20px 60px;color:#fff;border-radius:0 0 24px 24px}
+.hero-title{font-size:24px;font-weight:700}.hero-sub{font-size:13px;opacity:.9;margin-top:4px}
+.hero-card{margin-top:20px;background:rgba(255,255,255,.18);border:1px solid rgba(255,255,255,.25);border-radius:14px;padding:16px;display:flex;align-items:center;justify-content:space-between;cursor:pointer}
+.hc-title{font-size:16px;font-weight:600}.hc-desc{font-size:12px;opacity:.85;margin-top:4px}
+.grid{display:grid;grid-template-columns:repeat(4,1fr);gap:4px;padding:8px}
+.grid-item{display:flex;flex-direction:column;align-items:center;padding:14px 4px;gap:6px;cursor:pointer;border-radius:10px}
+.grid-item:active{background:#f3f4f6}
+.icon-wrap{width:44px;height:44px;border-radius:12px;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,#eef2ff,#e0e7ff);color:var(--primary)}
+.label{font-size:12px;color:var(--text)}
+.stat-row{display:flex;gap:12px;margin:12px 16px;margin-top:-40px;position:relative;z-index:2}
+.stat-card{flex:1;background:#fff;border-radius:12px;padding:16px 12px;text-align:center;box-shadow:0 1px 3px rgba(0,0,0,.05)}
+.stat-card .num{font-size:22px;font-weight:700}.num.chong{color:var(--danger)}.num.wen{color:var(--primary)}.num.bao{color:var(--success)}
+.stat-card .label{font-size:12px;color:var(--text2);margin-top:4px}
+.tool-item{display:flex;align-items:center;gap:12px;padding:12px 4px;border-bottom:1px solid #f5f5f5;cursor:pointer}
+.tool-item:last-child{border-bottom:none}.tool-item:active{background:#fafafa}
+.tool-icon{width:40px;height:40px;border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.tool-name{font-size:14px;font-weight:500}.tool-desc{font-size:12px;color:var(--text2);margin-top:2px}
+.uni-item{display:flex;align-items:center;padding:14px 16px;background:#fff;border-bottom:1px solid #f3f4f6;cursor:pointer}
+.uni-item:active{background:#f9fafb}.uni-main{flex:1;min-width:0}
+.uni-name-row{display:flex;align-items:center;gap:6px}.uni-name{font-size:15px;font-weight:600}
+.uni-meta{font-size:12px;color:var(--text2);margin-top:4px}
+.search-bar{background:#fff;padding:10px 16px 0}
+.cat-tag{padding:4px 12px;border-radius:15px;background:#f3f4f6;font-size:12px;cursor:pointer;display:inline-block}
+.cat-tag.active{background:var(--primary);color:#fff}
+.category-bar{display:flex;flex-wrap:wrap;gap:8px;padding:8px 16px;background:#fff;border-bottom:1px solid #f3f4f6}
+.year-tag{padding:6px 16px;border-radius:15px;background:#fff;font-size:13px;cursor:pointer}
+.year-tag.active{background:var(--primary);color:#fff}
+.year-tabs{display:flex;gap:8px;padding:12px 16px}
+.rank-num{display:inline-flex;width:22px;height:22px;border-radius:50%;background:#f3f4f6;color:#6b7280;font-size:12px;align-items:center;justify-content:center;margin-right:10px}
+.rank-num.top{background:#f59e0b;color:#fff}
+.sat-row{display:flex}.sat-item{flex:1;text-align:center}
+.sat-score{font-size:24px;font-weight:700;color:var(--primary)}
+.sat-label{font-size:13px;color:var(--text);margin-top:4px}.sat-count{font-size:11px;color:var(--text3);margin-top:2px}
+.post-item{padding:12px 0;border-bottom:1px solid #f5f5f5}
+.post-header{display:flex;gap:8px;margin-bottom:6px;flex-wrap:wrap}
+.post-major{font-size:14px;font-weight:600;color:var(--primary)}
+.post-content{font-size:13px;color:var(--text);line-height:1.6}
+.post-meta{font-size:11px;color:var(--text3);margin-top:6px}
+.progress-bar{height:4px;background:#e5e7eb;margin:16px 16px 0;border-radius:2px;overflow:hidden}
+.progress-fill{height:100%;background:var(--primary);transition:width .3s}
+.q-count{text-align:center;font-size:12px;color:var(--text2);margin:10px 0}
+.question-text{font-size:16px;font-weight:600;line-height:1.6;margin-bottom:20px}
+.option{display:flex;align-items:center;gap:12px;padding:14px;border:1px solid #e5e7eb;border-radius:10px;cursor:pointer;margin-bottom:10px;transition:all .2s}
+.option.selected{border-color:var(--primary);background:#eff6ff}
+.opt-num{width:24px;height:24px;border-radius:50%;background:#f3f4f6;color:#6b7280;font-size:13px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.option.selected .opt-num{background:var(--primary);color:#fff}
+.opt-text{font-size:14px;color:var(--text);flex:1}
+.form-row{display:flex;align-items:center;justify-content:space-between;padding:14px 4px;border-bottom:1px solid #f5f5f5;cursor:pointer}
+.form-row .label{font-size:14px;font-weight:500}.form-row .value{color:var(--text2)}
+.subject-tag{padding:6px 16px;border-radius:8px;border:1px solid #e5e7eb;background:#fff;font-size:13px;cursor:pointer}
+.subject-tag.active{background:var(--primary);color:#fff;border-color:var(--primary)}
+.subject-options{display:flex;gap:8px;flex-wrap:wrap}
+.subject-group{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+.group-label{font-size:12px;color:var(--text2);width:70px;flex-shrink:0}
+.profile-row{display:flex;flex-wrap:wrap;gap:12px}
+.profile-item{flex:1;min-width:80px;text-align:center}
+.pi-label{display:block;font-size:11px;color:var(--text2)}
+.pi-value{display:block;font-size:14px;font-weight:600;margin-top:4px}
+.rec-item{display:flex;align-items:center;gap:10px;padding:12px 0;border-bottom:1px solid #f5f5f5;cursor:pointer}
+.rec-rank{width:22px;height:22px;border-radius:50%;background:var(--primary);color:#fff;font-size:12px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.rec-name{font-size:14px;font-weight:600;display:flex;align-items:center;gap:6px}
+.rec-meta{font-size:12px;color:var(--text2);margin-top:3px}
+.chat-item{display:flex;margin-bottom:12px}.chat-item.user{justify-content:flex-end}
+.bubble{max-width:80%;padding:10px 14px;border-radius:12px;font-size:14px;line-height:1.6}
+.chat-item.ai .bubble{background:#fff;border-radius:12px 12px 12px 2px}
+.chat-item.user .bubble{background:var(--primary);color:#fff;border-radius:12px 12px 2px 12px}
+.sug-tag{padding:6px 12px;background:#eff6ff;color:var(--primary);border-radius:15px;font-size:12px;cursor:pointer;display:inline-block;margin:4px}
+.result-title{font-size:20px;font-weight:700;margin-top:12px}
+.result-score-box{background:#f0f4ff;border-radius:12px;padding:20px;margin:20px 0}
+.rs-num{font-size:22px;font-weight:700;color:var(--primary)}
+.dim-item{margin-bottom:14px}.dim-header{display:flex;justify-content:space-between;margin-bottom:6px}
+.dim-name{font-size:13px;font-weight:600}.dim-score{font-size:13px;color:var(--primary)}
+.empty-mini{color:var(--text3);font-size:13px;text-align:center;padding:20px}
+.safe-bottom{padding-bottom:env(safe-area-inset-bottom)}
+</style>
+</head>
+<body>
+<div id="app">
+  <template v-if="view === 'home'">
+    <div class="hero">
+      <div class="hero-title">高考帮</div>
+      <div class="hero-sub">考同样的分数，上更好的大学</div>
+      <div class="hero-card" @click="go('volunteer')">
+        <div><div class="hc-title">一键生成志愿方案</div><div class="hc-desc">输入分数，智能推荐冲稳保院校</div></div>
+        <span style="color:#fff">›</span>
+      </div>
+    </div>
+    <div class="stat-row">
+      <div class="stat-card"><div class="num chong">{{ profile.score ? '—' : 0 }}</div><div class="label">可冲击</div></div>
+      <div class="stat-card"><div class="num wen">{{ profile.score ? '—' : 0 }}</div><div class="label">较稳妥</div></div>
+      <div class="stat-card"><div class="num bao">{{ profile.score ? '—' : 0 }}</div><div class="label">可保底</div></div>
+      <div class="stat-card" @click="go('volunteer-setting')" style="cursor:pointer">
+        <div class="num" style="font-size:16px;color:var(--primary)">{{ profile.score ? '已填' : '去填写' }}</div>
+        <div class="label">{{ profile.score ? profile.score + '分' : '高考信息' }}</div>
+      </div>
+    </div>
+    <div class="card" style="padding:8px 4px">
+      <div class="grid">
+        <div class="grid-item" v-for="f in functions" :key="f.name" @click="go(f.path)">
+          <div class="icon-wrap"><i :class="'van-icon van-icon-' + f.icon"></i></div>
+          <div class="label">{{ f.name }}</div>
+        </div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title"><i class="van-icon van-icon-setting-o" style="color:var(--primary)"></i>常用工具</div>
+      <div class="tool-item" v-for="t in tools" :key="t.name" @click="go(t.path)">
+        <div class="tool-icon" :style="{background:t.bg,color:t.color}"><i :class="'van-icon van-icon-' + t.icon"></i></div>
+        <div style="flex:1"><div class="tool-name">{{t.name}}</div><div class="tool-desc">{{t.desc}}</div></div>
+        <i class="van-icon van-icon-arrow" style="color:#c0c4cc"></i>
+      </div>
+    </div>
+    <div style="height:20px"></div>
+  </template>
+
+  <template v-else-if="view === 'volunteer'">
+    <van-nav-bar title="志愿填报" left-arrow @click-left="back"></van-nav-bar>
+    <div v-if="!profile.score" class="card" style="text-align:center;padding:40px 20px">
+      <p style="color:var(--text2);margin-bottom:20px">先设置你的高考信息，获取精准志愿推荐</p>
+      <van-button type="primary" round @click="go('volunteer-setting')">去设置</van-button>
+    </div>
+    <template v-else>
+      <div class="card">
+        <div class="card-title"><i class="van-icon van-icon-user-o" style="color:var(--primary)"></i>我的高考信息
+          <span style="flex:1"></span><span style="font-size:12px;color:var(--primary);cursor:pointer" @click="go('volunteer-setting')">修改</span></div>
+        <div class="profile-row">
+          <div class="profile-item"><span class="pi-label">省份</span><span class="pi-value">{{profile.province}}</span></div>
+          <div class="profile-item"><span class="pi-label">年份</span><span class="pi-value">{{profile.year}}</span></div>
+          <div class="profile-item"><span class="pi-label">选科</span><span class="pi-value">{{(profile.subjects||[]).join('+')}}</span></div>
+          <div class="profile-item"><span class="pi-label">分数</span><span class="pi-value" style="color:var(--danger)">{{profile.score}}分</span></div>
+        </div>
+      </div>
+      <div class="stat-row" style="margin-top:12px">
+        <div class="stat-card" style="background:linear-gradient(135deg,#fef2f2,#fee2e2)"><div class="num chong">{{volResult.chong.length}}</div><div class="label">可冲击</div></div>
+        <div class="stat-card" style="background:linear-gradient(135deg,#eff6ff,#dbeafe)"><div class="num wen">{{volResult.wen.length}}</div><div class="label">较稳妥</div></div>
+        <div class="stat-card" style="background:linear-gradient(135deg,#ecfdf5,#d1fae5)"><div class="num bao">{{volResult.bao.length}}</div><div class="label">可保底</div></div>
+      </div>
+      <div class="card" v-if="volResult.chong.length">
+        <div class="card-title"><i class="van-icon van-icon-fire-o" style="color:#ef4444"></i>可冲击院校</div>
+        <div class="rec-item" v-for="(r,i) in volResult.chong.slice(0,8)" :key="'c'+i" @click="goUni(r.id)">
+          <span class="rec-rank">{{i+1}}</span>
+          <div style="flex:1"><div class="rec-name">{{r.name}}<span v-if="r.level && r.level.includes('985')" class="tag tag-985">985</span></div>
+          <div class="rec-meta">{{r.y}}年 {{r.s}}分 · 位次{{r.r}}</div></div>
+          <i class="van-icon van-icon-arrow" style="color:#c0c4cc"></i>
+        </div>
+      </div>
+      <div class="card" v-if="volResult.wen.length">
+        <div class="card-title"><i class="van-icon van-icon-balance-o" style="color:var(--primary)"></i>较稳妥院校</div>
+        <div class="rec-item" v-for="(r,i) in volResult.wen.slice(0,8)" :key="'w'+i" @click="goUni(r.id)">
+          <span class="rec-rank">{{i+1}}</span>
+          <div style="flex:1"><div class="rec-name">{{r.name}}</div><div class="rec-meta">{{r.y}}年 {{r.s}}分 · 位次{{r.r}}</div></div>
+          <i class="van-icon van-icon-arrow" style="color:#c0c4cc"></i>
+        </div>
+      </div>
+      <div class="card" v-if="volResult.bao.length">
+        <div class="card-title"><i class="van-icon van-icon-shield-o" style="color:var(--success)"></i>可保底院校</div>
+        <div class="rec-item" v-for="(r,i) in volResult.bao.slice(0,8)" :key="'b'+i" @click="goUni(r.id)">
+          <span class="rec-rank">{{i+1}}</span>
+          <div style="flex:1"><div class="rec-name">{{r.name}}</div><div class="rec-meta">{{r.y}}年 {{r.s}}分 · 位次{{r.r}}</div></div>
+          <i class="van-icon van-icon-arrow" style="color:#c0c4cc"></i>
+        </div>
+      </div>
+    </template>
+    <div style="height:20px"></div>
+  </template>
+
+  <template v-else-if="view === 'volunteer-setting'">
+    <van-nav-bar title="设置高考信息" left-arrow @click-left="back"></van-nav-bar>
+    <div class="card">
+      <div class="form-row" @click="showPicker('province')"><span class="label">高考省份</span><span class="value">{{form.province||'请选择'}}</span></div>
+      <div class="form-row" @click="showPicker('year')"><span class="label">高考年份</span><span class="value">{{form.year||'请选择'}}</span></div>
+      <div class="form-row" style="flex-direction:column;align-items:flex-start;gap:10px">
+        <span class="label">选学科</span>
+        <div style="width:100%">
+          <div class="subject-group"><span class="group-label">必选(2选1)</span>
+            <div class="subject-options">
+              <span class="subject-tag" :class="{active:form.subjects.includes('物理')}" @click="toggleSub('物理')">物理</span>
+              <span class="subject-tag" :class="{active:form.subjects.includes('历史')}" @click="toggleSub('历史')">历史</span>
+            </div>
+          </div>
+          <div class="subject-group"><span class="group-label">任选(4选2)</span>
+            <div class="subject-options">
+              <span v-for="s in ['化学','生物','政治','地理']" :key="s" class="subject-tag" :class="{active:form.subjects.includes(s)}" @click="toggleSub(s)">{{s}}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="form-row"><span class="label">高考分数</span>
+        <input v-model="form.score" type="number" placeholder="请输入分数" style="border:none;text-align:right;font-size:14px;width:120px;outline:none"></div>
+      <div class="form-row"><span class="label">高考排名</span>
+        <input v-model="form.rank" type="number" placeholder="选填" style="border:none;text-align:right;font-size:14px;width:120px;outline:none"></div>
+    </div>
+    <div style="margin:20px 16px"><van-button type="primary" block round size="large" @click="saveProfile">完成</van-button></div>
+    <van-popup v-model:show="picker.show" position="bottom" round>
+      <van-picker :columns="picker.columns" @confirm="onPick" @cancel="picker.show=false" :title="picker.title"></van-picker>
+    </van-popup>
+  </template>
+
+  <template v-else-if="view === 'universities'">
+    <van-nav-bar title="查大学" left-arrow @click-left="back"></van-nav-bar>
+    <div class="search-bar">
+      <van-search v-model="uniKeyword" placeholder="搜索学校名称" shape="round"></van-search>
+    </div>
+    <div class="uni-item" v-for="u in filteredUnis" :key="u.id" @click="goUni(u.id)">
+      <div class="uni-main">
+        <div class="uni-name-row"><span class="uni-name">{{u.name}}</span>
+          <span v-if="u.level && u.level.includes('985')" class="tag tag-985">985</span>
+          <span v-if="u.level && u.level.includes('211')" class="tag tag-211">211</span>
+          <span v-if="u.level && u.level.includes('双一流')" class="tag tag-syl">双一流</span></div>
+        <div class="uni-meta">{{u.province}}{{u.city?' · '+u.city:''}} · {{u.tags && u.tags.includes('公办')?'公办':'院校'}}{{u.type?' · '+u.type:''}}</div>
+      </div>
+      <i class="van-icon van-icon-arrow" style="color:#c0c4cc"></i>
+    </div>
+    <div v-if="!filteredUnis.length" class="empty-mini">未找到匹配院校</div>
+  </template>
+
+  <template v-else-if="view === 'uni-detail'">
+    <van-nav-bar :title="uniDetail.name" left-arrow @click-left="back"></van-nav-bar>
+    <div v-if="uniDetail" class="card" style="margin-top:12px">
+      <div class="uni-name-row"><span style="font-size:20px;font-weight:700">{{uniDetail.name}}</span>
+        <span v-if="uniDetail.level && uniDetail.level.includes('985')" class="tag tag-985">985</span>
+        <span v-if="uniDetail.level && uniDetail.level.includes('211')" class="tag tag-211">211</span></div>
+      <div style="font-size:13px;color:var(--text2);margin-top:8px">{{uniDetail.province}} {{uniDetail.city||''}} · {{uniDetail.type||''}}</div>
+    </div>
+    <div class="card" v-if="uniSat">
+      <div class="card-title"><i class="van-icon van-icon-like-o" style="color:var(--primary)"></i>院校满意度</div>
+      <div class="sat-row">
+        <div class="sat-item"><div class="sat-score">{{uniSat.c||'-'}}</div><div class="sat-label">综合</div><div class="sat-count">{{uniSat.cv||0}}票</div></div>
+        <div class="sat-item"><div class="sat-score">{{uniSat.x||'-'}}</div><div class="sat-label">院校</div></div>
+        <div class="sat-item"><div class="sat-score">{{uniSat.l||'-'}}</div><div class="sat-label">生活</div></div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title"><i class="van-icon van-icon-bar-chart-o" style="color:var(--primary)"></i>历年录取分数</div>
+      <div v-if="uniAdmissions.length">
+        <div class="rec-item" v-for="a in uniAdmissions" :key="a.id">
+          <span style="color:var(--text2);font-weight:600;width:50px">{{a.y}}</span>
+          <span style="color:var(--text2);flex:1">{{a.c||'普通类'}}</span>
+          <span style="color:var(--danger);font-weight:600">{{a.s}}分</span>
+          <span v-if="a.r" style="color:var(--primary);margin-left:10px">位次{{a.r}}</span>
+        </div>
+      </div>
+      <div v-else class="empty-mini">暂无录取数据</div>
+    </div>
+    <div class="card">
+      <div class="card-title"><i class="van-icon van-icon-friends-o" style="color:var(--primary)"></i>学长学姐建议</div>
+      <div v-if="uniPosts.length">
+        <div class="post-item" v-for="p in uniPosts.slice(0,5)" :key="p.id">
+          <div class="post-header"><span class="post-major">{{p.mj}}</span></div>
+          <div class="post-content">{{p.ct.slice(0,100)}}...</div>
+          <div class="post-meta">{{p.ed||''}} · 👍 {{p.th||0}}</div>
+        </div>
+      </div>
+      <div v-else class="empty-mini">暂无该院校建议</div>
+    </div>
+    <div style="height:20px"></div>
+  </template>
+
+  <template v-else-if="view === 'majors'">
+    <van-nav-bar title="查专业" left-arrow @click-left="back"></van-nav-bar>
+    <div class="search-bar"><van-search v-model="majorKeyword" placeholder="搜索专业名称" shape="round"></van-search></div>
+    <div class="category-bar">
+      <span class="cat-tag" :class="{active:!majorCat}" @click="majorCat=''">全部</span>
+      <span v-for="c in majorCats" :key="c" class="cat-tag" :class="{active:majorCat===c}" @click="majorCat=c">{{c}}</span>
+    </div>
+    <div class="card" style="padding:4px 12px">
+      <div class="uni-item" v-for="m in filteredMajors.slice(0,60)" :key="m.name" @click="view='major-detail';selMajor=m.name">
+        <div class="uni-main"><div class="uni-name">{{m.name}}</div><div class="uni-meta">{{m.count}}条学长学姐建议</div></div>
+        <i class="van-icon van-icon-arrow" style="color:#c0c4cc"></i>
+      </div>
+    </div>
+  </template>
+
+  <template v-else-if="view === 'major-detail'">
+    <van-nav-bar :title="selMajor" left-arrow @click-left="back"></van-nav-bar>
+    <div class="card">
+      <div class="card-title"><i class="van-icon van-icon-orders-o" style="color:var(--primary)"></i>{{selMajor}}</div>
+      <div style="display:flex;gap:20px;text-align:center">
+        <div style="flex:1"><div style="font-size:26px;font-weight:700;color:var(--primary)">{{majorPosts.length}}</div><div style="font-size:12px;color:var(--text2)">学长学姐建议</div></div>
+        <div style="flex:1"><div style="font-size:26px;font-weight:700;color:var(--primary)">{{majorSchools.length}}</div><div style="font-size:12px;color:var(--text2)">涉及院校</div></div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title"><i class="van-icon van-icon-friends-o" style="color:var(--primary)"></i>学长学姐怎么说</div>
+      <div class="post-item" v-for="p in majorPosts.slice(0,20)" :key="p.id">
+        <div class="post-header"><span class="post-major">{{p.sc}}</span><span style="font-size:11px;color:var(--text2)">{{p.ed}}</span></div>
+        <div class="post-content">{{p.ct}}</div>
+        <div class="post-meta">👍 {{p.th||0}}</div>
+      </div>
+    </div>
+  </template>
+
+  <template v-else-if="view === 'rankings'">
+    <van-nav-bar title="大学排行榜" left-arrow @click-left="back"></van-nav-bar>
+    <div class="year-tabs">
+      <span v-for="y in [2025,2024,2023]" :key="y" class="year-tag" :class="{active:rankYear===y}" @click="rankYear=y">{{y}}</span>
+    </div>
+    <div class="card" style="padding:4px 12px">
+      <div class="uni-item" v-for="(r,i) in topList" :key="r.n" @click="goUniByName(r.n)">
+        <span class="rank-num" :class="{top:i<3}">{{i+1}}</span>
+        <div style="flex:1"><div class="uni-name">{{r.n}}</div><div class="uni-meta">{{r.p}}</div></div>
+        <span style="color:var(--primary);font-weight:600">{{r.sc}}</span>
+      </div>
+    </div>
+  </template>
+
+  <template v-else-if="view === 'satisfaction'">
+    <van-nav-bar title="院校满意度" left-arrow @click-left="back"></van-nav-bar>
+    <div class="search-bar"><van-search v-model="satKeyword" placeholder="搜索院校" shape="round"></van-search></div>
+    <div class="card" style="padding:4px 12px">
+      <div class="uni-item" v-for="s in filteredSat" :key="s.name" @click="goUniByName(s.name)">
+        <div style="flex:1"><div class="uni-name">{{s.name}}</div><div class="uni-meta">{{s.province}} · {{s.cv||0}}人投票</div></div>
+        <span style="color:var(--primary);font-weight:700;font-size:16px">{{s.c||'-'}}</span>
+      </div>
+    </div>
+  </template>
+
+  <template v-else-if="view === 'psychology'">
+    <van-nav-bar title="心理测评" left-arrow @click-left="back"></van-nav-bar>
+    <div class="card" style="text-align:center">
+      <div style="font-size:20px;font-weight:700">认识自己，选对方向</div>
+      <div style="font-size:13px;color:var(--text2);margin-top:6px">经典心理学量表，帮助你了解性格、能力与兴趣</div>
+    </div>
+    <div class="card" v-for="t in testList" :key="t.code" style="display:flex;align-items:center;gap:14px;cursor:pointer" @click="startTest(t.code)">
+      <div style="flex:1">
+        <div style="font-size:15px;font-weight:600">{{t.name}}</div>
+        <div style="font-size:12px;color:var(--text2);margin-top:3px">{{t.desc}}</div>
+        <div style="font-size:11px;color:var(--text3);margin-top:3px">{{t.count}}题 · 约{{Math.round(t.count/2)}}分钟</div>
+      </div>
+      <i class="van-icon van-icon-arrow" style="color:#c0c4cc"></i>
+    </div>
+  </template>
+
+  <template v-else-if="view === 'test'">
+    <van-nav-bar :title="currentTest.name" left-arrow @click-left="back"></van-nav-bar>
+    <template v-if="!testFinished">
+      <div class="progress-bar"><div class="progress-fill" :style="{width:(testIdx/testTotal*100)+'%'}"></div></div>
+      <div class="q-count">第 {{testIdx+1}} / {{testTotal}} 题</div>
+      <div class="card">
+        <div class="question-text">{{currentQ.t}}</div>
+        <div v-for="(opt,oi) in testOptions" :key="oi" class="option" :class="{selected:testAnswers[testIdx]===oi}" @click="testAnswers[testIdx]=oi">
+          <span class="opt-num">{{oi+1}}</span><span class="opt-text">{{opt}}</span>
+        </div>
+      </div>
+      <div style="margin:0 16px;display:flex;gap:10px">
+        <van-button v-if="testIdx>0" block round @click="testIdx--">上一题</van-button>
+        <van-button type="primary" block round @click="testNext" :disabled="testAnswers[testIdx]==null">
+          {{testIdx===testTotal-1?'提交':'下一题'}}</van-button>
+      </div>
+    </template>
+    <template v-else>
+      <div class="card" style="text-align:center;padding:30px 20px">
+        <div style="font-size:20px;font-weight:700">{{testResult.title}}</div>
+        <div style="font-size:13px;color:var(--text2);margin-top:4px">感谢你的认真作答</div>
+        <div class="result-score-box"><div class="rs-num">{{testResult.summary}}</div></div>
+        <div v-for="d in testResult.dims" :key="d.name" class="dim-item">
+          <div class="dim-header"><span class="dim-name">{{d.name}}</span><span class="dim-score">{{d.score}}</span></div>
+          <van-progress :percentage="d.pct" color="#2563eb" stroke-width="8"></van-progress>
+        </div>
+        <div style="font-size:11px;color:var(--text3);margin-top:20px">本测试仅供自我了解参考，不构成专业诊断</div>
+        <van-button type="primary" round block style="margin-top:16px" @click="resetTest">重新测试</van-button>
+        <van-button plain round block style="margin-top:10px" @click="view='psychology'">返回</van-button>
+      </div>
+    </template>
+  </template>
+
+  <template v-else-if="view === 'ai'">
+    <van-nav-bar title="AI志愿助手" left-arrow @click-left="back"></van-nav-bar>
+    <div class="card" v-if="!aiConfigured">
+      <div class="card-title"><i class="van-icon van-icon-setting-o" style="color:var(--primary)"></i>配置 AI 接口</div>
+      <p style="font-size:12px;color:var(--text2);margin-bottom:16px;line-height:1.6">使用任意 OpenAI 兼容 API（智谱GLM-4.7-flash免费、DeepSeek等），实现智能志愿问答。</p>
+      <van-field v-model="aiConfig.baseUrl" label="接口地址" placeholder="https://open.bigmodel.cn/api/paas/v4"></van-field>
+      <van-field v-model="aiConfig.apiKey" label="API Key" type="password" placeholder="sk-..."></van-field>
+      <van-field v-model="aiConfig.model" label="模型" placeholder="glm-4.7-flash"></van-field>
+      <van-button type="primary" block round style="margin-top:16px" @click="saveAi">保存配置</van-button>
+      <van-button plain block round style="margin-top:10px" @click="useAiDemo">使用演示模式（无需Key）</van-button>
+    </div>
+    <template v-else>
+      <div style="padding:16px;min-height:55vh">
+        <div class="chat-item" v-for="(m,i) in aiMessages" :key="i" :class="m.role">
+          <div class="bubble">{{m.content}}</div>
+        </div>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px;padding:10px 16px;background:#fff;border-top:1px solid #f3f4f6">
+        <van-field v-model="aiInput" placeholder="问我：530分能上什么大学？" style="flex:1;background:#f3f4f6;border-radius:20px"></van-field>
+        <van-button type="primary" round size="small" @click="aiSend">发送</van-button>
+      </div>
+      <div style="display:flex;flex-wrap:wrap;gap:8px;padding:10px 16px">
+        <span v-for="s in aiSuggestions" :key="s" class="sug-tag" @click="aiAsk(s)">{{s}}</span>
+      </div>
+    </template>
+  </template>
+
+  <template v-else-if="view === 'scoreline'">
+    <van-nav-bar title="省批次线" left-arrow @click-left="back"></van-nav-bar>
+    <div class="year-tabs"><span v-for="y in [2025,2024]" :key="y" class="year-tag" :class="{active:slYear===y}" @click="slYear=y">{{y}}</span></div>
+    <div class="card" style="padding:4px 12px">
+      <div class="uni-item" v-for="l in slLines" :key="l.name">
+        <div style="flex:1"><div class="uni-name">{{l.name}}</div><div class="uni-meta">{{l.note}}</div></div>
+        <span style="color:var(--primary);font-weight:600;margin-right:8px">物理{{l.phys}}</span>
+        <span style="color:#8b5cf6;font-weight:600">历史{{l.hist}}</span>
+      </div>
+    </div>
+  </template>
+
+  <template v-else-if="view === 'rank'">
+    <van-nav-bar title="一分一段 · 分数位次换算" left-arrow @click-left="back"></van-nav-bar>
+    <div class="card">
+      <div class="card-title"><i class="van-icon van-icon-exchange" style="color:var(--primary)"></i>分数 → 位次换算</div>
+      <div class="form-row"><span class="label">省份</span><span class="value">{{rankProvince}}</span></div>
+      <div class="form-row"><span class="label">年份</span><span class="value">{{rankYear2}}</span></div>
+      <div class="form-row"><span class="label">科类</span><span class="value">{{rankCat}}</span></div>
+      <div class="form-row"><span class="label">分数</span>
+        <input v-model="rankScore" type="number" placeholder="输入高考分数" style="border:none;text-align:right;font-size:14px;width:120px;outline:none"></div>
+      <van-button type="primary" block round style="margin-top:16px" @click="rankConvert">开始换算</van-button>
+    </div>
+    <div class="card" v-if="rankResult">
+      <div class="card-title"><i class="van-icon van-icon-chart-trending-o" style="color:var(--primary)"></i>换算结果</div>
+      <div style="text-align:center;padding:20px 0">
+        <div style="font-size:40px;font-weight:800;color:var(--primary)">{{rankScore}}</div>
+        <div style="font-size:13px;color:var(--text2)">分 ≈ 全省位次</div>
+        <div style="font-size:24px;font-weight:700;color:var(--danger);margin-top:8px">{{rankResult.rankText}}</div>
+        <div v-if="rankResult.surpass" style="font-size:12px;color:var(--text2);margin-top:6px">超过全省 {{rankResult.surpass}}</div>
+      </div>
+      <div v-if="rankResult.olds && rankResult.olds.length" style="border-top:1px dashed #e5e7eb;padding-top:14px">
+        <div style="font-size:13px;font-weight:600;margin-bottom:10px">跨年等效分（位次等价）</div>
+        <div v-for="o in rankResult.olds" :key="o.y" style="display:flex;justify-content:space-between;padding:6px 0;font-size:13px;color:var(--text2)">
+          <span>{{o.y}}年 ≈</span><span style="color:var(--primary);font-weight:600">{{o.s}}分</span>
+        </div>
+      </div>
+    </div>
+  </template>
+
+  <!-- 底部Tab栏 -->
+  <div style="position:fixed;bottom:0;left:0;right:0;z-index:100;background:#fff;border-top:1px solid #f0f0f0;display:flex;padding-bottom:env(safe-area-inset-bottom)">
+    <div v-for="tab in tabs" :key="tab.view" @click="go(tab.view)" style="flex:1;text-align:center;padding:8px 0 6px;color:currentView===tab.view?'#2563eb':'#8a8f99';cursor:pointer">
+      <i :class="'van-icon van-icon-' + tab.icon" style="font-size:20px;display:block"></i>
+      <span style="font-size:11px">{{tab.label}}</span>
+    </div>
+  </div>
+</div>
+
+<script>
+const { createApp } = Vue
+
+createApp({
+  data() {
+    return {
+      view: 'home',
+      profile: {},
+      uniKeyword: '',
+      majorKeyword: '',
+      majorCat: '',
+      selMajor: '',
+      satKeyword: '',
+      rankYear: 2025,
+      rankYear2: '2024',
+      rankProvince: '福建',
+      rankCat: '物理类',
+      rankScore: '',
+      rankResult: null,
+      slYear: 2025,
+      picker: { show: false, type: '', columns: [], title: '' },
+      form: { province: '', year: '2029', subjects: [], score: '', rank: '' },
+      uniDetail: null,
+      uniSat: null,
+      uniAdmissions: [],
+      uniPosts: [],
+      testIdx: 0,
+      testAnswers: [],
+      testFinished: false,
+      testResult: {},
+      aiConfigured: false,
+      aiConfig: {},
+      aiInput: '',
+      aiMessages: [{ role: 'ai', content: '你好！我是高考志愿AI助手。可以问我：我的分数能上什么大学？某个专业怎么样？' }],
+      aiSuggestions: ['530分能上什么大学？', '软件工程专业怎么样？', '物理类600分推荐院校', '什么是强基计划？'],
+      // 数据
+      universities: [], satisfaction: [], admissions: [], posts: [],
+      ranks: {}, tests: {},
+      testList: [],
+    }
+  },
+  computed: {
+    currentView() { return this.view },
+    tabs() {
+      const t = [
+        { view: 'home', label: '首页', icon: 'wap-home-o' },
+        { view: 'volunteer', label: '填志愿', icon: 'edit' },
+        { view: 'universities', label: '查大学', icon: 'search' },
+        { view: 'psychology', label: '测评', icon: 'smile-o' },
+        { view: 'ai', label: 'AI', icon: 'chat-o' },
+      ]
+      return t
+    },
+    functions() {
+      return [
+        { name: '填志愿', icon: 'edit', path: 'volunteer' },
+        { name: '找学校', icon: 'search', path: 'universities' },
+        { name: '查专业', icon: 'orders-o', path: 'majors' },
+        { name: '省批次线', icon: 'bar-chart-o', path: 'scoreline' },
+        { name: '一分一段', icon: 'chart-trending-o', path: 'rank' },
+        { name: '大学排名', icon: 'medal-o', path: 'rankings' },
+        { name: '院校满意度', icon: 'like-o', path: 'satisfaction' },
+        { name: '心理测评', icon: 'smile-o', path: 'psychology' },
+        { name: 'AI志愿助手', icon: 'chat-o', path: 'ai' },
+      ]
+    },
+    tools() {
+      return [
+        { name: '大学排名', desc: '2020-2025六年权威排名', icon: 'medal-o', path: 'rankings', bg: '#fef3c7', color: '#d97706' },
+        { name: '院校满意度', desc: '600万人真实投票', icon: 'like-o', path: 'satisfaction', bg: '#ecfdf5', color: '#059669' },
+        { name: '专业过来人建议', desc: '1万+学长学姐经验', icon: 'friends-o', path: 'majors', bg: '#fdf4ff', color: '#9333ea' },
+        { name: '省批次线', desc: '各省录取控制线', icon: 'bar-chart-o', path: 'scoreline', bg: '#eff6ff', color: '#2563eb' },
+      ]
+    },
+    filteredUnis() {
+      let list = this.universities
+      if (this.uniKeyword) list = list.filter(u => u.name.includes(this.uniKeyword.trim()))
+      return list.slice(0, 80)
+    },
+    majorCats() {
+      return ['工学','理学','医学','经济学','管理学','法学','文学','教育学','农学','艺术学','哲学','历史学']
+    },
+    filteredMajors() {
+      let list = this.majorList
+      if (this.majorKeyword) list = list.filter(m => m.name.includes(this.majorKeyword.trim()))
+      if (this.majorCat) {
+        const catMap = { '工学':['计算机','软件','电子','自动化','电气','机械','土木','建筑','材料','通信','网络','人工智能','数据'], '理学':['数学','物理','化学','生物','地理','心理','统计'], '医学':['临床','口腔','药学','护理','中医','医学影像','康复'], '经济学':['经济','金融','财政','贸易','保险','投资'], '管理学':['工商','会计','财务','人力','管理','电子商务','物流'], '法学':['法学','政治','社会','侦查','治安'], '文学':['汉语言','英语','日语','翻译','新闻','广告','传播'], '教育学':['教育','学前','小学','体育','运动'], '农学':['农学','园艺','植物','动物','园林','水产'], '艺术学':['视觉','环境设计','产品设计','数字媒体','音乐','舞蹈','表演','美术','播音','动画'], '哲学':['哲学'], '历史学':['历史'] }
+        const kws = catMap[this.majorCat] || []
+        list = list.filter(m => kws.some(k => m.name.includes(k)))
+      }
+      return list.slice(0, 60)
+    },
+    majorList() {
+      const map = {}
+      this.posts.forEach(p => { if (!p.mj) return; if (!map[p.mj]) map[p.mj] = { name: p.mj, count: 0 }; map[p.mj].count++ })
+      return Object.values(map).sort((a, b) => b.count - a.count)
+    },
+    filteredSat() {
+      let list = this.satisfaction.filter(s => s.c != null)
+      if (this.satKeyword) list = list.filter(s => s.name.includes(this.satKeyword.trim()))
+      return list.sort((a, b) => (b.c || 0) - (a.c || 0)).slice(0, 60)
+    },
+    topList() {
+      return (this.ranks[this.rankYear] || []).filter(r => r.rg === 'mainland').slice(0, 50)
+    },
+    slLines() {
+      const d = {
+        2025: [
+          { name: '特殊类型线', phys: 520, hist: 531, note: '强基/综评资格参考' },
+          { name: '本科批', phys: 441, hist: 450, note: '普通本科录取线' },
+          { name: '专科批', phys: 235, hist: 235, note: '高职高专录取线' },
+        ],
+        2024: [
+          { name: '特殊类型线', phys: 524, hist: 536, note: '强基/综评资格参考' },
+          { name: '本科批', phys: 443, hist: 431, note: '普通本科录取线' },
+          { name: '专科批', phys: 235, hist: 235, note: '高职高专录取线' },
+        ],
+      }
+      return d[this.slYear] || d[2025]
+    },
+    volResult() {
+      const score = Number(this.profile.score) || 0
+      if (!score) return { chong: [], wen: [], bao: [] }
+      const prov = this.profile.province
+      const seen = new Set(), chong = [], wen = [], bao = []
+      this.admissions.forEach(a => {
+        if (a.p !== prov || !a.s || seen.has(a.ui)) return
+        seen.add(a.ui)
+        const diff = a.s - score
+        const u = this.universities.find(u => u.id === a.ui)
+        if (!u) return
+        const item = { ...u, y: a.y, s: a.s, r: a.r }
+        if (diff > 0 && diff <= 20) chong.push(item)
+        else if (diff >= -15 && diff <= 0) wen.push(item)
+        else if (diff < -15 && diff > -40) bao.push(item)
+      })
+      const sortBy = arr => arr.sort((a, b) => (b.s || 0) - (a.s || 0))
+      return { chong: sortBy(chong).slice(0, 20), wen: sortBy(wen).slice(0, 20), bao: sortBy(bao).slice(0, 20) }
+    },
+    currentTest() { return this.testList.find(t => t.code === this.testCode) || { name: '', questions: [] } },
+    testTotal() { return (this.currentTest.questions || []).length },
+    currentQ() { return (this.currentTest.questions || [])[this.testIdx] || {} },
+    testOptions() {
+      const q = this.currentQ
+      if (q.opts && q.opts.length) return q.opts
+      const scale = this.currentTest.scale || ''
+      if (scale.includes('4级计分（1=没有')) return ['没有或很少时间','少部分时间','相当多时间','绝大部分时间']
+      if (scale.includes('非常不同意')) return ['非常不同意','不同意','同意','非常同意']
+      return ['完全不符','有点不符','不确定','有点符合','完全符合']
+    },
+    majorPosts() { return this.posts.filter(p => p.mj === this.selMajor) },
+    majorSchools() { return [...new Set(this.majorPosts.map(p => p.sc).filter(Boolean))] },
+  },
+  methods: {
+    go(view) {
+      this.view = view
+      if (view === 'volunteer' || view === 'universities' || view === 'psychology') {
+        // 主页面
+      }
+      window.scrollTo(0, 0)
+    },
+    back() { this.view = 'home'; window.scrollTo(0, 0) },
+    goUni(id) {
+      this.uniDetail = this.universities.find(u => u.id === Number(id)) || null
+      this.uniSat = this.satisfaction.find(s => s.name === (this.uniDetail && this.uniDetail.name)) || null
+      this.uniAdmissions = this.admissions.filter(a => a.ui === Number(id)).sort((a, b) => b.y - a.y)
+      this.uniPosts = this.posts.filter(p => p.sc === (this.uniDetail && this.uniDetail.name))
+      this.view = 'uni-detail'
+      window.scrollTo(0, 0)
+    },
+    goUniByName(name) {
+      const u = this.universities.find(u => u.name === name)
+      if (u) this.goUni(u.id)
+    },
+    showPicker(type) {
+      if (type === 'province') { this.picker = { show: true, type, title: '选择省份', columns: ['北京','天津','河北','山西','内蒙古','辽宁','吉林','黑龙江','上海','江苏','浙江','安徽','福建','江西','山东','河南','湖北','湖南','广东','广西','海南','重庆','四川','贵州','云南','西藏','陕西','甘肃','青海','宁夏','新疆'] } }
+      else { this.picker = { show: true, type, title: '选择年份', columns: ['2026','2027','2028','2029'] } }
+    },
+    onPick({ selectedOptions }) {
+      const val = selectedOptions[0].text
+      if (this.picker.type === 'province') this.form.province = val
+      else this.form.year = val
+      this.picker.show = false
+    },
+    toggleSub(s) {
+      const idx = this.form.subjects.indexOf(s)
+      if (idx >= 0) { this.form.subjects.splice(idx, 1); return }
+      if (s === '物理') this.form.subjects = this.form.subjects.filter(x => x !== '历史')
+      if (s === '历史') this.form.subjects = this.form.subjects.filter(x => x !== '物理')
+      const opt = this.form.subjects.filter(x => ['化学','生物','政治','地理'].includes(x))
+      if (opt.length >= 2 && ['化学','生物','政治','地理'].includes(s)) {
+        vant.showToast('任选科目最多选2个'); return
+      }
+      this.form.subjects.push(s)
+    },
+    saveProfile() {
+      if (!this.form.province) return vant.showToast('请选择省份')
+      if (!this.form.score) return vant.showToast('请填写分数')
+      const pri = this.form.subjects.filter(s => ['物理','历史'].includes(s))
+      const opt = this.form.subjects.filter(s => ['化学','生物','政治','地理'].includes(s))
+      if (pri.length !== 1) return vant.showToast('请选择物理或历史')
+      if (opt.length !== 2) return vant.showToast('请选择2门任选科目')
+      localStorage.setItem('bk_profile', JSON.stringify(this.form))
+      this.profile = JSON.parse(JSON.stringify(this.form))
+      vant.showToast({ type: 'success', message: '已保存' })
+      this.view = 'volunteer'
+    },
+    startTest(code) {
+      this.testCode = code
+      const t = this.testList.find(x => x.code === code)
+      this.testIdx = 0
+      this.testAnswers = new Array((t.questions || []).length).fill(null)
+      this.testFinished = false
+      this.view = 'test'
+      window.scrollTo(0, 0)
+    },
+    testNext() {
+      if (this.testAnswers[this.testIdx] == null) return vant.showToast('请先选择答案')
+      if (this.testIdx < this.testTotal - 1) this.testIdx++
+      else this.computeTestResult()
+    },
+    computeTestResult() {
+      const t = this.currentTest
+      const dims = {}
+      t.questions.forEach((q, i) => {
+        const ans = this.testAnswers[i] ?? 1
+        const dim = q.d || '总分'
+        if (!dims[dim]) dims[dim] = { sum: 0, count: 0 }
+        dims[dim].sum += q.rv ? (6 - (ans + 1)) : (ans + 1)
+        dims[dim].count++
+      })
+      const dimArr = Object.entries(dims).map(([name, d]) => {
+        const avg = d.sum / d.count
+        return { name, score: avg.toFixed(1) + '/5', pct: Math.round(avg / 5 * 100) }
+      })
+      const total = t.questions.reduce((s, q, i) => s + (q.rv ? (6 - (this.testAnswers[i] + 1)) : (this.testAnswers[i] + 1)), 0)
+      const avg = total / t.questions.length
+      let title, summary
+      if (this.testCode === 'SDS' || this.testCode === 'SAS') {
+        const std = Math.round(total * 1.25)
+        summary = '标准分 ' + std + ' 分'
+        title = std < 50 ? '状态良好' : std < 60 ? '轻度' : std < 70 ? '中度' : '重度'
+      } else if (this.testCode === 'IQ-TEST') {
+        summary = '完成 40 题'
+        title = avg >= 3.5 ? '较高水平' : avg >= 2.5 ? '中等水平' : '有提升空间'
+      } else {
+        summary = '平均分 ' + avg.toFixed(1) + ' / 5'
+        title = avg >= 4 ? '优秀' : avg >= 3 ? '良好' : '有提升空间'
+      }
+      this.testResult = { title, summary, dims: dimArr }
+      this.testFinished = true
+      const records = JSON.parse(localStorage.getItem('bk_test_records') || '[]')
+      records.push({ code: this.testCode, time: Date.now(), result: title })
+      localStorage.setItem('bk_test_records', JSON.stringify(records))
+    },
+    resetTest() {
+      this.testFinished = false
+      this.testIdx = 0
+      const t = this.testList.find(x => x.code === this.testCode)
+      this.testAnswers = new Array((t.questions || []).length).fill(null)
+    },
+    saveAi() {
+      localStorage.setItem('bk_ai_config', JSON.stringify(this.aiConfig))
+      this.aiConfigured = true
+      vant.showToast({ type: 'success', message: '已保存' })
+    },
+    useAiDemo() { localStorage.setItem('bk_ai_demo', '1'); this.aiConfigured = true },
+    aiAsk(s) { this.aiInput = s; this.aiSend() },
+    async aiSend() {
+      const text = this.aiInput.trim()
+      if (!text) return
+      this.aiMessages.push({ role: 'user', content: text })
+      this.aiInput = ''
+      if (localStorage.getItem('bk_ai_demo') === '1' || !this.aiConfig.apiKey) {
+        setTimeout(() => this.aiMessages.push({ role: 'ai', content: this.aiDemo(text) }), 500)
+        return
+      }
+      try {
+        const base = (this.aiConfig.baseUrl || '').replace(/\/$/, '')
+        const res = await fetch(base + '/chat/completions', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + this.aiConfig.apiKey },
+          body: JSON.stringify({ model: this.aiConfig.model || 'glm-4.7-flash', messages: [{ role: 'user', content: text }] })
+        })
+        const data = await res.json()
+        this.aiMessages.push({ role: 'ai', content: (data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content) || '抱歉，未能获取回答' })
+      } catch (e) {
+        this.aiMessages.push({ role: 'ai', content: '调用失败：' + e.message })
+      }
+    },
+    aiDemo(q) {
+      if (q.includes('530')) return '530分（物理类）在多数省份可报考：普通一本院校中档专业、本科批强势专业。建议冲稳保梯度填报。'
+      if (q.includes('软件工程')) return '软件工程就业前景好、薪资高，适合逻辑思维强、喜欢编程的同学。推荐：浙大(A+)、北航、国防科大、哈工大、电子科大等。'
+      if (q.includes('600')) return '600分（物理类）属各省前列（前5%-8%），可冲击中坚985（武大、华科、同济部分专业）、顶尖211（北邮、上财）热门专业。'
+      if (q.includes('强基')) return '强基计划是39所双一流A类高校的基础学科招生，聚焦数学、物理、化学、生物等。高考85%+校测15%。'
+      return '建议先设置高考信息（省份+分数），我就能给出针对性建议。也可以问我：我的分数能上什么大学？'
+    },
+    rankConvert() {
+      const s = Number(this.rankScore)
+      if (!s) return vant.showToast('请输入分数')
+      // 内置福建一分一段关键数据(2024物理类)
+      const segs = [
+        { mn: 680, mx: 750, rank: '1~45', surpass: '99.99%' },
+        { mn: 670, mx: 679, rank: '46~340', surpass: '99.8%' },
+        { mn: 660, mx: 669, rank: '341~900', surpass: '99.5%' },
+        { mn: 650, mx: 659, rank: '901~1900', surpass: '99.0%' },
+        { mn: 640, mx: 649, rank: '1901~3200', surpass: '98.4%' },
+        { mn: 630, mx: 639, rank: '3201~4800', surpass: '97.5%' },
+        { mn: 620, mx: 629, rank: '4801~6700', surpass: '96.5%' },
+        { mn: 610, mx: 619, rank: '6701~9000', surpass: '95.3%' },
+        { mn: 600, mx: 609, rank: '9001~11500', surpass: '94.0%' },
+        { mn: 580, mx: 599, rank: '11501~16500', surpass: '91.5%' },
+        { mn: 550, mx: 579, rank: '16501~25000', surpass: '87.0%' },
+        { mn: 520, mx: 549, rank: '25001~36000', surpass: '81.0%' },
+        { mn: 500, mx: 519, rank: '36001~45000', surpass: '77.0%' },
+        { mn: 470, mx: 499, rank: '45001~58000', surpass: '70.0%' },
+        { mn: 441, mx: 469, rank: '58001~70000', surpass: '65.0%' },
+      ]
+      const found = segs.find(x => s >= x.mn && s <= x.mx)
+      this.rankResult = found ? { rankText: found.rank + ' 名', surpass: found.surpass, olds: [{ y: '2023', s: s - 3 }, { y: '2022', s: s - 8 }] } : { rankText: '未查询到', olds: [] }
+    },
+  },
+  async mounted() {
+    this.profile = JSON.parse(localStorage.getItem('bk_profile') || '{}')
+    const ai = JSON.parse(localStorage.getItem('bk_ai_config') || '{}')
+    this.aiConfig = ai
+    this.aiConfigured = !!(ai.baseUrl && ai.apiKey) || localStorage.getItem('bk_ai_demo') === '1'
+
+    // 加载数据
+    const load = async (path) => {
+      const res = await fetch('data/' + path)
+      return res.json()
+    }
+    try {
+      const [unis, sat, adm, posts, tests] = await Promise.all([
+        load('universities.json'), load('satisfaction.json'), load('admissions.json'), load('posts.json'), load('tests.json')
+      ])
+      this.universities = unis
+      this.satisfaction = sat
+      this.admissions = adm
+      this.posts = posts
+      this.testList = Object.entries(tests).map(([code, t]) => ({ ...t, code }))
+      // 加载排名
+      for (const y of [2025, 2024, 2023]) {
+        this.ranks[y] = await load('rank_' + y + '.json')
+      }
+      console.log('数据加载完成: 大学' + unis.length + ' 满意度' + sat.length + ' 录取' + adm.length + ' 建议' + posts.length)
+    } catch (e) {
+      console.error('数据加载失败:', e)
+    }
+  }
+}).mount('#app')
+</script>
+</body>
+</html>
