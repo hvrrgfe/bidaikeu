@@ -183,7 +183,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,'PingFang SC','Helvetica Neue'
         </div>
       </div>
       <div style="margin:0 16px 16px;display:flex;gap:10px">
-        <van-button type="primary" block round size="large" @click="printVolunteer">打印志愿表</van-button>
+        <van-button type="primary" block round size="large" @click="saveVolunteer">保存志愿表</van-button>
+        <van-button plain block round size="large" @click="printVolunteer">打印</van-button>
       </div>
     </template>
     <div style="height:20px"></div>
@@ -631,7 +632,7 @@ createApp({
       aiConfig: {},
       aiInput: '',
       aiMessages: [{ role: 'ai', content: '你好！我是高考志愿AI助手。可以问我：我的分数能上什么大学？某个专业怎么样？' }],
-      aiSuggestions: ['530分能上什么大学？', '软件工程专业怎么样？', '物理类600分推荐院校', '什么是强基计划？'],
+      aiSuggestions: ['530分能上什么大学？', '软件工程专业怎么样？', '物理类600分推荐院校', '我想去上海上大学', '我适合学什么专业？', '什么是强基计划？'],
       studyPrompts: [
         { name: '错题分析', prompt: '我是一名高中生，这道题我做错了：【粘贴题目和你的解答】。正确答案是：【答案】。请帮我：1.分析做错的根本原因 2.讲解正确解题思路 3.总结这类题型的通用方法 4.出2道同类型变式题' },
         { name: '费曼学习法', prompt: '# 角色\n你是费曼学习法的践行者，擅长通过追问和简化来检验和加深对知识的理解。\n\n# 费曼学习法流程\n当我告诉你一个概念后，请按以下步骤进行：\n1. **请我用自己的话解释**：让我尝试解释这个概念\n2. **找出漏洞**：指出我解释中的不准确、遗漏或含糊之处\n3. **追问深入**：问3-5个深入的问题，检验我的理解深度\n4. **简化挑战**：要求我用一个比喻向10岁小孩解释\n5. **总结反馈**：评估我的理解程度(0-100%)，指出需要加强的部分\n\n# 约束\n- 不要直接给答案，引导我自己思考\n- 如果我回答不上来，给提示而非答案\n- 鼓励性的语气，保护学习积极性' },
@@ -1018,7 +1019,34 @@ createApp({
         }
       }
 
-      // 4. 排名问题
+      // 4. 城市/地区问题 → 该地大学
+      const cityMatch = q.match(/去([\u4e00-\u9fff]{1,4})(?:上大学|读书|发展)/) || q.match(/想去?([\u4e00-\u9fff]{1,4})/)
+      if (cityMatch && (q.includes('大学') || q.includes('读书') || q.includes('上'))) {
+        const city = cityMatch[1]
+        const hit = this.universities.filter(u => (u.city && u.city.includes(city)) || (u.province && u.province.includes(city))).slice(0, 10)
+        if (hit.length) {
+          ctx.push(`【本地数据 · ${city}地区高校】` + hit.map(u => u.name + (u.level && u.level.includes('985') ? '(985)' : u.level && u.level.includes('211') ? '(211)' : '')).join('、'))
+        }
+      }
+
+      // 5. 专业推荐问题（结合心理测评结果）
+      if (q.includes('适合') && (q.includes('专业') || q.includes('学什么'))) {
+        const records = JSON.parse(localStorage.getItem('bk_test_records') || '[]')
+        const testTips = {
+          'BF-2': '大五人格：开放性高→文科/艺术/研究，尽责性高→工科/管理，宜人性高→教育/医疗，外向性高→经管/市场',
+          'TALENT-TEST': '潜在天赋：创造力高→设计/传媒，逻辑高→计算机/数学/工科，人际高→管理/师范，语言高→外语/新闻，艺术高→艺术类',
+          'COLOR-PERSONALITY': '性格色彩：红色→管理/销售/工科，蓝色→研究/技术，黄色→创意/传媒，绿色→教育/服务',
+        }
+        const lastTest = records[records.length - 1]
+        if (lastTest) {
+          const tip = testTips[lastTest.code]
+          if (tip) ctx.push(`【心理测评联动】用户最近完成「${lastTest.name}」，结果：${lastTest.result}。\n${tip}\n推荐专业：计算机/软件(逻辑型)、医学/生物(研究型)、经济/管理(人际型)、师范/心理(关怀型)、设计/传媒(创造型)`)
+        } else {
+          ctx.push('【提示】建议先做"潜在天赋测试"或"性格色彩测试"，AI将基于测评结果推荐适合专业。可参考：计算机/软件、临床医学、金融、师范、设计等方向')
+        }
+      }
+
+      // 6. 排名问题
       if (q.includes('排名') || q.includes('排行榜')) {
         const top = (this.ranks[2025] || []).filter(r => r.rg === 'mainland').slice(0, 10)
         if (top.length) ctx.push('【本地数据 · 2025中国大学排名TOP10】' + top.map((r, i) => `${i + 1}.${r.n}(${r.sc})`).join(' '))
@@ -1093,6 +1121,19 @@ createApp({
       if (q.includes('600')) return '600分（物理类）属各省前列（前5%-8%），可冲击中坚985（武大、华科、同济部分专业）、顶尖211（北邮、上财）热门专业。'
       if (q.includes('强基')) return '强基计划是39所双一流A类高校的基础学科招生，聚焦数学、物理、化学、生物等。高考85%+校测15%。'
       return '建议先设置高考信息（省份+分数），我就能给出针对性建议。也可以问我：我的分数能上什么大学？'
+    },
+    saveVolunteer() {
+      if (!this.profile.score) return vant.showToast('请先设置高考信息')
+      const records = JSON.parse(localStorage.getItem('bk_volunteers') || '[]')
+      records.push({
+        time: new Date().toLocaleString('zh-CN'),
+        profile: { ...this.profile },
+        chong: this.volResult.chong.slice(0, 10).map(r => ({ name: r.name, score: r.s, rank: r.r })),
+        wen: this.volResult.wen.slice(0, 10).map(r => ({ name: r.name, score: r.s, rank: r.r })),
+        bao: this.volResult.bao.slice(0, 10).map(r => ({ name: r.name, score: r.s, rank: r.r })),
+      })
+      localStorage.setItem('bk_volunteers', JSON.stringify(records))
+      vant.showToast({ type: 'success', message: '志愿表已保存（' + records.length + '份）' })
     },
     printVolunteer() {
       if (!this.profile.score) return vant.showToast('请先设置高考信息')
