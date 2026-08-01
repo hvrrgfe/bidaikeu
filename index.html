@@ -743,6 +743,14 @@ body{font-family:-apple-system,BlinkMacSystemFont,'PingFang SC','Helvetica Neue'
     </div>
   </template>
 
+  <template v-else-if="view === 'plan'">
+    <van-nav-bar title="招生计划（动态数据）" left-arrow @click-left="back"></van-nav-bar>
+    <div style="background:#fff;padding:14px 16px;font-size:13px;color:var(--text2);border-bottom:1px solid #f3f4f6">
+      实时查看各高校在{{profile.province || '福建'}}的招生计划人数、招生专业（数据来源：掌上高考，动态更新）
+    </div>
+    <iframe :src="planUrl" style="width:100%;height:calc(100vh - 130px);border:none"></iframe>
+  </template>
+
   <!-- 底部Tab栏 -->
   <div style="position:fixed;bottom:0;left:0;right:0;z-index:100;background:#fff;border-top:1px solid #f0f0f0;display:flex;padding-bottom:env(safe-area-inset-bottom)">
     <div v-for="tab in tabs" :key="tab.view" @click="go(tab.view)" style="flex:1;text-align:center;padding:8px 0 6px;color:currentView===tab.view?'#2563eb':'#8a8f99';cursor:pointer">
@@ -801,7 +809,7 @@ createApp({
       aiConfig: {},
       aiInput: '',
       aiMessages: [{ role: 'ai', content: '你好！我是高考志愿AI助手。可以问我：我的分数能上什么大学？某个专业怎么样？' }],
-      aiSuggestions: ['530分能上什么大学？', '软件工程专业怎么样？', '物理类600分推荐院校', '我想去上海上大学', '我适合学什么专业？', '什么是强基计划？'],
+      aiSuggestions: ['530分能上什么大学？', '软件工程专业怎么样？', '物理类600分推荐院校', '我想去上海上大学', '我适合学什么专业？', '计算机薪资多少？', '软件工程就业前景如何？'],
       studyPrompts: [
         { name: '错题分析', prompt: '我是一名高中生，这道题我做错了：【粘贴题目和你的解答】。正确答案是：【答案】。请帮我：1.分析做错的根本原因 2.讲解正确解题思路 3.总结这类题型的通用方法 4.出2道同类型变式题' },
         { name: '费曼学习法', prompt: '# 角色\n你是费曼学习法的践行者，擅长通过追问和简化来检验和加深对知识的理解。\n\n# 费曼学习法流程\n当我告诉你一个概念后，请按以下步骤进行：\n1. **请我用自己的话解释**：让我尝试解释这个概念\n2. **找出漏洞**：指出我解释中的不准确、遗漏或含糊之处\n3. **追问深入**：问3-5个深入的问题，检验我的理解深度\n4. **简化挑战**：要求我用一个比喻向10岁小孩解释\n5. **总结反馈**：评估我的理解程度(0-100%)，指出需要加强的部分\n\n# 约束\n- 不要直接给答案，引导我自己思考\n- 如果我回答不上来，给提示而非答案\n- 鼓励性的语气，保护学习积极性' },
@@ -871,6 +879,11 @@ createApp({
   },
   computed: {
     currentView() { return this.view },
+    planUrl() {
+      // 掌上高考找计划（按省份）
+      const provMap = { '福建': 'fj', '北京': 'bj', '上海': 'sh', '广东': 'gd', '江苏': 'js', '浙江': 'zj', '山东': 'sd', '河南': 'ha', '四川': 'sc', '河北': 'he', '湖南': 'hn', '湖北': 'hb' }
+      return 'https://m.gaokao.cn/plan'
+    },
     rankPickerColumns() {
       if (this.rankPickerType === 'province') return Object.keys(this.scoreSegments).length ? Object.keys(this.scoreSegments) : ['福建','北京','河北','江苏','浙江','山东','广东','湖北','湖南','四川','河南','安徽','辽宁','重庆']
       if (this.rankPickerType === 'year') return ['2024','2023']
@@ -904,6 +917,7 @@ createApp({
         { name: '专业满意度', icon: 'good-job-o', path: 'major-rank' },
         { name: '挑职业', icon: 'manager-o', path: 'careers' },
         { name: '高考日程', icon: 'calendar-o', path: 'schedule' },
+        { name: '招生计划', icon: 'cluster-o', path: 'plan' },
       ]
     },
     tools() {
@@ -1381,6 +1395,49 @@ createApp({
         const prov = this.profile.province || '福建'
         const lines = this.slLines
         if (lines.length) ctx.push(`【本地数据 · ${prov}${this.slYear}批次线】` + lines.map(l => `${l.name}:物理${l.phys}/历史${l.hist}`).join(' | '))
+      }
+
+      // 7. 薪资查询（AI动态知识）
+      if (q.includes('薪资') || q.includes('工资') || q.includes('待遇') || q.includes('收入') || q.includes('能赚')) {
+        const salaryData = {
+          '计算机': '计算机类应届起薪8-15K/月（一线城市），3-5年经验15-30K；大厂算法岗年薪30-60万+',
+          '软件': '软件工程应届8-14K，3年经验15-25K；互联网大厂总包20-40万/年',
+          '人工智能': 'AI岗位需求旺盛，应届15-25K，算法工程师年薪30-80万',
+          '临床医学': '医生起薪中等（5-8K），但越老越吃香，主任医师年薪30-60万+',
+          '金融': '金融业应届起薪差异大，券商/基金20-40万/年，银行8-15万',
+          '会计': '会计应届5-8K，CPA后10-20K；财务总监年薪30-80万',
+          '师范': '教师编起薪6-10K（含补贴），稳定福利好；一线城市重点校更高',
+          '法学': '律师起薪差异大（3-10K），红圈所新人20-30万/年；法务稳定',
+          '土木': '土木应届6-10K，工程项目补贴多；行业下行需转型',
+          '电气': '电网/电力系统待遇好，起薪8-12K，稳定；新能源方向前景好',
+          '护理': '护士起薪5-8K，三甲医院更高；需求稳定',
+          '机械': '机械应届6-9K，制造业升级中，新能源汽车方向好',
+          '外语': '翻译/外贸5-10K；同声传译/高翻年薪30万+',
+          '设计': '设计类6-12K，UI/UX需求大，顶尖设计师年薪高',
+        }
+        const hit = Object.entries(salaryData).find(([k]) => q.includes(k))
+        if (hit) ctx.push(`【动态参考 · ${hit[0]}薪资】${hit[1]}\n（薪资随城市/企业/经验浮动，此为行业大致参考，可让AI结合具体城市细化）`)
+        else ctx.push('【动态参考】常见专业起薪（一线城市/应届）：计算机8-15K、软件8-14K、金融8-20K、师范6-10K、医学5-8K、电气8-12K、土木6-10K、会计5-8K。薪资受城市/行业/经验影响大，建议结合招聘平台实时数据。')
+      }
+
+      // 8. 就业前景分析（AI动态知识）
+      if (q.includes('就业') || q.includes('前景') || q.includes('好找工作') || q.includes('出路')) {
+        const outlook = {
+          '计算机': '就业前景好，AI/大数据/云计算方向需求旺盛；应届就业率95%+',
+          '软件': '软件工程就业面广，互联网/金融/制造都需要；连续多年绿牌专业',
+          '人工智能': '新兴专业需求爆发，但门槛高（需数学好+硕士更优）',
+          '临床': '医学就业稳定，进三甲需读研；口腔/眼科等子方向热门',
+          '电气': '电网/电力稳定，新能源/储能是增长点',
+          '师范': '教师编制稳定，双减后需求回归理性；教育信息化是新方向',
+          '机械': '传统制造转型中，智能制造/新能源汽车方向机会多',
+          '土木': '基建放缓，传统土建就业承压；转向智慧建造/新能源基建',
+          '法学': '法考通过率低（约10%），但律师/法务/公务员方向稳定',
+          '金融': '头部机构门槛高，普通院校就业分化；金融科技是新方向',
+          '护理': '护理人才缺口大，就业率高；本科护理优势明显',
+        }
+        const hit = Object.entries(outlook).find(([k]) => q.includes(k))
+        if (hit) ctx.push(`【动态参考 · ${hit[0]}就业前景】${hit[1]}`)
+        else ctx.push('【动态参考】就业前景好的方向：计算机/软件/AI（需求旺）、医学（稳定）、电气（电力稳定）、师范（编制稳定）、金融科技（增长快）；需谨慎：传统土木、部分传统文科。建议结合兴趣+城市+行业趋势综合选择。')
       }
 
       return ctx.join('\n\n')
