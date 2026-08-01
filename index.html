@@ -17,6 +17,11 @@
 <script src="lib/vant.min.js"></script>
 <style>
 :root{--primary:#2563eb;--bg:#f5f6fa;--card:#fff;--text:#1f2937;--text2:#6b7280;--text3:#9ca3af;--border:#e5e7eb;--danger:#ef4444;--success:#10b981}
+[data-theme="dark"]{--primary:#3b82f6;--bg:#111827;--card:#1f2937;--text:#f3f4f6;--text2:#9ca3af;--text3:#6b7280;--border:#374151}
+[data-theme="dark"] .uni-item,[data-theme="dark"] .search-bar,[data-theme="dark"] .category-bar{background:#1f2937;color:#f3f4f6}
+[data-theme="dark"] .uni-item{border-color:#374151}
+[data-theme="dark"] .card{background:#1f2937;box-shadow:none}
+[data-theme="dark"] body{background:#111827}
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
 body{font-family:-apple-system,BlinkMacSystemFont,'PingFang SC','Helvetica Neue','Microsoft YaHei',sans-serif;background:var(--bg);color:var(--text);font-size:14px;line-height:1.5}
 .page{min-height:100vh;padding-bottom:70px}
@@ -111,7 +116,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'PingFang SC','Helvetica Neue'
 <div id="app">
   <template v-if="view === 'home'">
     <div class="hero">
-      <div class="hero-title">高考帮</div>
+      <div class="hero-title">高考帮 <span style="font-size:13px;cursor:pointer;margin-left:10px" @click="toggleTheme">{{darkMode ? '☀️' : '🌙'}}</span></div>
       <div class="hero-sub">考同样的分数，上更好的大学</div>
       <div style="display:flex;gap:10px;margin-top:10px;flex-wrap:wrap">
         <span style="background:rgba(255,255,255,.2);border-radius:8px;padding:4px 12px;font-size:12px" v-if="countdownDays > 0">⏰ 距{{profile.year || '2029'}}高考还有 {{countdownDays}} 天</span>
@@ -201,8 +206,9 @@ body{font-family:-apple-system,BlinkMacSystemFont,'PingFang SC','Helvetica Neue'
         <van-button type="primary" block round size="large" @click="saveVolunteer">保存志愿表</van-button>
         <van-button plain block round size="large" @click="printVolunteer">打印</van-button>
       </div>
-      <div style="margin:0 16px 16px">
-        <van-button plain block round size="large" @click="exportCsv">导出CSV（Excel）</van-button>
+      <div style="margin:0 16px 16px;display:flex;gap:10px">
+        <van-button plain block round size="large" @click="exportCsv">导出CSV</van-button>
+        <van-button plain block round size="large" @click="shareVolunteer">分享</van-button>
       </div>
     </template>
     <div style="height:20px"></div>
@@ -299,9 +305,12 @@ body{font-family:-apple-system,BlinkMacSystemFont,'PingFang SC','Helvetica Neue'
   </template>
 
   <template v-else-if="view === 'uni-detail'">
-    <van-nav-bar :title="uniDetail.name" left-arrow @click-left="back">
-      <template #right><span @click="toggleFav" style="font-size:18px;cursor:pointer">{{isFav ? '⭐' : '☆'}}</span></template>
-    </van-nav-bar>
+    <van-nav-bar :title="uniDetail.name" left-arrow @click-left="back"></van-nav-bar>
+    <div style="display:flex;gap:10px;padding:8px 16px;background:#fff;border-bottom:1px solid #f3f4f6">
+      <span @click="toggleFav" style="font-size:13px;cursor:pointer;background:#f3f4f6;padding:6px 14px;border-radius:15px">{{isFav ? '⭐ 已收藏' : '☆ 收藏'}}</span>
+      <span @click="addToCompare" style="font-size:13px;color:#2563eb;cursor:pointer;background:#eff6ff;padding:6px 14px;border-radius:15px">对比</span>
+      <span @click="shareUni" style="font-size:13px;color:#10b981;cursor:pointer;background:#ecfdf5;padding:6px 14px;border-radius:15px">分享</span>
+    </div>
     <div v-if="uniDetail" class="card" style="margin-top:12px">
       <div class="uni-name-row"><span style="font-size:20px;font-weight:700">{{uniDetail.name}}</span>
         <span v-if="uniDetail.level && uniDetail.level.includes('985')" class="tag tag-985">985</span>
@@ -751,6 +760,64 @@ body{font-family:-apple-system,BlinkMacSystemFont,'PingFang SC','Helvetica Neue'
     <iframe :src="planUrl" style="width:100%;height:calc(100vh - 130px);border:none"></iframe>
   </template>
 
+  <template v-else-if="view === 'compare'">
+    <van-nav-bar title="院校对比" left-arrow @click-left="back">
+      <template #right><span style="font-size:13px;color:var(--danger)" @click="clearCompare">清空</span></template>
+    </van-nav-bar>
+    <div v-if="compareList.length < 2" class="card" style="text-align:center;padding:40px 20px">
+      <i class="van-icon van-icon-compare" style="font-size:48px;color:#c0c4cc"></i>
+      <p style="color:var(--text2);margin:12px 0">已选 {{compareList.length}}/4 所院校<br>在院校详情页点"对比"加入，选2-4所后对比</p>
+      <van-button type="primary" round @click="go('universities')">去选院校</van-button>
+    </div>
+    <div v-else class="card" style="padding:12px;overflow-x:auto">
+      <table style="width:100%;border-collapse:collapse;font-size:13px;min-width:500px">
+        <tr style="background:#f9fafb">
+          <th style="border:1px solid #e5e7eb;padding:10px;text-align:left;width:90px">项目</th>
+          <th v-for="u in compareList" :key="u.id" style="border:1px solid #e5e7eb;padding:10px;text-align:center">
+            <div style="font-weight:700">{{u.name}}</div>
+            <div style="font-size:11px;color:var(--text2);font-weight:normal;margin-top:4px">
+              <span v-if="u.level && u.level.includes('985')" class="tag tag-985">985</span>
+              <span v-if="u.level && u.level.includes('211')" class="tag tag-211">211</span>
+            </div>
+          </th>
+        </tr>
+        <tr v-for="row in compareRows" :key="row.label">
+          <td style="border:1px solid #e5e7eb;padding:8px;font-weight:600;background:#fafafa">{{row.label}}</td>
+          <td v-for="u in compareList" :key="u.id" style="border:1px solid #e5e7eb;padding:8px;text-align:center">{{row.get(u)}}</td>
+        </tr>
+      </table>
+      <div style="text-align:center;margin-top:12px">
+        <van-button size="small" round type="primary" @click="compareToAi">问AI选哪所</van-button>
+      </div>
+    </div>
+  </template>
+
+  <template v-else-if="view === 'help'">
+    <van-nav-bar title="使用帮助" left-arrow @click-left="back"></van-nav-bar>
+    <div class="card">
+      <div class="card-title"><i class="van-icon van-icon-question-o" style="color:var(--primary)"></i>常见问题</div>
+      <div class="rec-item" v-for="(f, i) in faqList" :key="i" @click="faqOpen = (faqOpen === i ? -1 : i)">
+        <div style="flex:1;font-size:14px">{{ f.q }}</div>
+        <i class="van-icon" :class="faqOpen===i?'van-icon-arrow-down':'van-icon-arrow'" style="color:#c0c4cc"></i>
+      </div>
+      <div v-if="faqOpen >= 0" style="background:#f9fafb;border-radius:8px;padding:12px;margin-top:10px;font-size:13px;line-height:1.8;color:var(--text2)">
+        {{ faqList[faqOpen].a }}
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title"><i class="van-icon van-icon-info-o" style="color:var(--primary)"></i>关于数据</div>
+      <p style="font-size:12px;color:var(--text2);line-height:1.8">
+        大学库：3071所（教育部备案，已清洗野鸡大学）<br>
+        录取数据：2023-2025年多省（含位次）<br>
+        一分一段：28省2018-2024（含跨年等效分）<br>
+        院校满意度：阳光高考600万人实名投票<br>
+        专业建议：框框大学10219条学长学姐经验<br>
+        心理测评：8个经典量表（大五/IQ/天赋等）<br>
+        数据仅供参考，填报请以当年官方公布为准
+      </p>
+    </div>
+  </template>
+
   <!-- 底部Tab栏 -->
   <div style="position:fixed;bottom:0;left:0;right:0;z-index:100;background:#fff;border-top:1px solid #f0f0f0;display:flex;padding-bottom:env(safe-area-inset-bottom)">
     <div v-for="tab in tabs" :key="tab.view" @click="go(tab.view)" style="flex:1;text-align:center;padding:8px 0 6px;color:currentView===tab.view?'#2563eb':'#8a8f99';cursor:pointer">
@@ -792,6 +859,8 @@ createApp({
       uniAdmissions: [],
       uniPosts: [],
       isFav: false,
+      compareList: [],
+      darkMode: false,
       testIdx: 0,
       testAnswers: [],
       testFinished: false,
@@ -836,6 +905,15 @@ createApp({
       countdownDays: 0,
       favList: [],
       majorRankList: [], careersData: [], careerKeyword: '',
+      faqOpen: -1,
+      faqList: [
+        { q: '填志愿怎么用？', a: '首页点"去填写"设置省份/年份/选科/分数，系统自动按录取数据生成冲稳保方案（含录取概率）。可保存、打印、导出CSV。' },
+        { q: 'AI助手要付费吗？', a: '不用。选择"演示模式"可体验数据联动；接入智谱GLM-4.7-flash等免费API后可用真实AI对话，Key只存在本机。' },
+        { q: '心理测评准确吗？', a: '采用经典心理学量表（大五BFI-2、Zung抑郁焦虑等），结果用于自我了解参考，不构成专业诊断。' },
+        { q: '数据多久更新？', a: '录取分数/批次线随高考季更新；一分一段为2018-2024；招生计划实时接入掌上高考。' },
+        { q: '可以离线用吗？', a: '可以。首次打开后（PWA）会自动缓存核心数据，添加到主屏幕后离线也能用查大学/查专业/测评。' },
+        { q: '野鸡大学查询靠谱吗？', a: '基于教育部备案名单（2991所正规高校）交叉核验，可识别虚假大学。' },
+      ],
       scheduleList: [
         { time: '10-11月', event: '高考报名（应届/往届）' },
         { time: '3月', event: '高考体检' },
@@ -929,6 +1007,8 @@ createApp({
         { name: '我的志愿表', desc: '查看已保存的方案', icon: 'orders-o', path: 'my-volunteers', bg: '#fef2f2', color: '#dc2626' },
         { name: '我的收藏', desc: '收藏的院校', icon: 'star-o', path: 'my-favorites', bg: '#fdf4ff', color: '#9333ea' },
         { name: '测评记录', desc: '历史测评结果', icon: 'records-o', path: 'my-tests', bg: '#fefce8', color: '#ca8a04' },
+        { name: '院校对比', desc: '2-4所并排对比', icon: 'compare', path: 'compare', bg: '#e0f2fe', color: '#0284c7' },
+        { name: '使用帮助', desc: '常见问题+数据说明', icon: 'question-o', path: 'help', bg: '#f5f3ff', color: '#7c3aed' },
       ]
     },
     filteredUnis() {
@@ -972,6 +1052,19 @@ createApp({
       const records = JSON.parse(localStorage.getItem('bk_test_records') || '[]')
       const testNames = { 'BF-2': '大五人格', 'IQ-TEST': 'IQ测试', 'TALENT-TEST': '潜在天赋', 'COLOR-PERSONALITY': '性格色彩', 'TMMS': '情绪智力', 'ROSENBERG-SELF-ESTEEM': '自尊量表', 'SDS': '抑郁自评', 'SAS': '焦虑自评' }
       return records.slice().reverse().map(r => ({ ...r, name: testNames[r.code] || r.name, timeText: new Date(r.time).toLocaleDateString('zh-CN') }))
+    },
+    compareRows() {
+      const rows = []
+      const sat = (u) => { const s = this.satisfaction.find(x => x.name === u.name); return s ? s.c + '/5' : '-' }
+      const adm = (u) => { const a = this.admissions.filter(x => x.ui === u.id && x.s).sort((a, b) => b.y - a.y)[0]; return a ? a.y + '年' + a.s + '分' : '-' }
+      const posts = (u) => { const p = this.posts.filter(x => x.sc === u.name); return p.length ? p.length + '条' : '-' }
+      rows.push({ label: '所在地', get: u => u.province + ' ' + (u.city || '') })
+      rows.push({ label: '类型', get: u => u.type || '-' })
+      rows.push({ label: '层次', get: u => (u.level || '-').slice(0, 12) })
+      rows.push({ label: '满意度', get: sat })
+      rows.push({ label: '近年录取', get: adm })
+      rows.push({ label: '学长建议', get: posts })
+      return rows
     },
     filteredSat() {
       let list = this.satisfaction.filter(s => s.c != null)
@@ -1115,6 +1208,30 @@ createApp({
       window.scrollTo(0, 0)
     },
     back() { this.view = 'home'; window.scrollTo(0, 0) },
+    addToCompare() {
+      if (!this.uniDetail) return
+      if (this.compareList.some(u => u.id === this.uniDetail.id)) { vant.showToast('已在对比列表'); return }
+      if (this.compareList.length >= 4) { vant.showToast('最多对比4所'); return }
+      this.compareList.push(this.uniDetail)
+      vant.showToast({ type: 'success', message: '已加入对比（' + this.compareList.length + '/4）' })
+      if (this.compareList.length >= 2) {
+        setTimeout(() => { if (confirm('已选' + this.compareList.length + '所，立即对比？')) { this.view = 'compare'; window.scrollTo(0, 0) } }, 400)
+      }
+    },
+    clearCompare() { this.compareList = []; vant.showToast('已清空') },
+    toggleTheme() {
+      this.darkMode = !this.darkMode
+      document.documentElement.setAttribute('data-theme', this.darkMode ? 'dark' : 'light')
+      localStorage.setItem('bk_dark', this.darkMode ? '1' : '0')
+      vant.showToast(this.darkMode ? '已开启深色模式' : '已切换浅色模式')
+    },
+    compareToAi() {
+      const names = this.compareList.map(u => u.name).join('、')
+      this.aiInput = '对比这几所学校 ' + names + '，帮我分析各自优势和适合的人群，给出选择建议'
+      this.view = 'ai'
+      this.aiSend()
+      window.scrollTo(0, 0)
+    },
     toggleFav() {
       const favs = JSON.parse(localStorage.getItem('bk_favorites') || '[]')
       const id = this.uniDetail.id
@@ -1507,6 +1624,32 @@ createApp({
       if (q.includes('强基')) return '强基计划是39所双一流A类高校的基础学科招生，聚焦数学、物理、化学、生物等。高考85%+校测15%。'
       return '建议先设置高考信息（省份+分数），我就能给出针对性建议。也可以问我：我的分数能上什么大学？'
     },
+    sharePage(text) {
+      if (navigator.share) {
+        navigator.share({ title: '高考帮', text: text, url: location.href }).catch(() => {})
+      } else {
+        // 复制到剪贴板
+        const ta = document.createElement('textarea')
+        ta.value = text
+        document.body.appendChild(ta)
+        ta.select()
+        try { document.execCommand('copy') } catch(e) {}
+        document.body.removeChild(ta)
+        vant.showToast({ type: 'success', message: '已复制，可粘贴分享' })
+      }
+    },
+    shareVolunteer() {
+      if (!this.profile.score) return vant.showToast('请先设置高考信息')
+      const c = this.volResult.chong.slice(0,3).map(r => r.name).join('、')
+      const w = this.volResult.wen.slice(0,3).map(r => r.name).join('、')
+      const b = this.volResult.bao.slice(0,3).map(r => r.name).join('、')
+      this.sharePage('我的高考志愿方案（' + this.profile.province + ' ' + this.profile.score + '分）\n冲：' + c + '\n稳：' + w + '\n保：' + b + '\n——来自高考帮App')
+    },
+    shareUni() {
+      if (!this.uniDetail) return
+      const sat = this.uniSat ? '满意度' + this.uniSat.c + '/5' : ''
+      this.sharePage('【' + this.uniDetail.name + '】' + (this.uniDetail.level || '') + ' ' + (this.uniDetail.type || '') + ' ' + this.uniDetail.province + ' ' + sat + '\n——来自高考帮App')
+    },
     exportCsv() {
       if (!this.profile.score) return vant.showToast('请先设置高考信息')
       const rows = [['类型', '序号', '院校', '2025录取分', '位次', '录取概率']]
@@ -1535,6 +1678,11 @@ createApp({
       })
       localStorage.setItem('bk_volunteers', JSON.stringify(records))
       vant.showToast({ type: 'success', message: '志愿表已保存（' + records.length + '份）' })
+    },
+    delVolunteerAll() {
+      localStorage.setItem('bk_volunteers', '[]')
+      this.myVolunteers = []
+      vant.showToast('已清空全部')
     },
     printVolunteer() {
       if (!this.profile.score) return vant.showToast('请先设置高考信息')
@@ -1611,6 +1759,12 @@ createApp({
     const ai = JSON.parse(localStorage.getItem('bk_ai_config') || '{}')
     this.aiConfig = ai
     this.aiConfigured = !!(ai.baseUrl && ai.apiKey) || localStorage.getItem('bk_ai_demo') === '1'
+
+    // 恢复深色模式
+    if (localStorage.getItem('bk_dark') === '1') {
+      this.darkMode = true
+      document.documentElement.setAttribute('data-theme', 'dark')
+    }
 
     // 高考倒计时（该年6月7日）
     try {
