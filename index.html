@@ -94,6 +94,11 @@ body{font-family:-apple-system,BlinkMacSystemFont,'PingFang SC','Helvetica Neue'
 .fake-list{display:flex;flex-wrap:wrap;gap:6px}
 .fake-tag{padding:3px 10px;background:#fef2f2;color:#dc2626;border-radius:12px;font-size:11px}
 .safe-bottom{padding-bottom:env(safe-area-inset-bottom)}
+@media print {
+  body { background: #fff; }
+  .van-nav-bar, [style*="position:fixed"] { display: none !important; }
+  #print-area { padding: 0; box-shadow: none; }
+}
 </style>
 </head>
 <body>
@@ -193,9 +198,12 @@ body{font-family:-apple-system,BlinkMacSystemFont,'PingFang SC','Helvetica Neue'
   <!-- 打印视图 -->
   <div v-if="view === 'print'">
     <van-nav-bar title="志愿表预览" left-arrow @click-left="back">
-      <template #right><span style="font-size:14px;color:#2563eb" @click="doPrint">打印</span></template>
+      <template #right>
+        <span style="font-size:14px;color:#2563eb;margin-right:14px" @click="doPrint">打印</span>
+        <span style="font-size:14px;color:#10b981" @click="doExportPdf">导出PDF</span>
+      </template>
     </van-nav-bar>
-    <div id="print-area" style="background:#fff;padding:24px 20px">
+    <div id="print-area" style="background:#fff;padding:24px 20px;max-width:800px;margin:0 auto">
       <div style="text-align:center;border-bottom:2px solid #1f2937;padding-bottom:12px;margin-bottom:16px">
         <div style="font-size:20px;font-weight:700">高考志愿表（冲稳保方案）</div>
         <div style="font-size:12px;color:#6b7280;margin-top:6px">
@@ -615,6 +623,22 @@ body{font-family:-apple-system,BlinkMacSystemFont,'PingFang SC','Helvetica Neue'
     </div>
   </template>
 
+  <template v-else-if="view === 'news'">
+    <van-nav-bar title="各省考试院 · 高考资讯" left-arrow @click-left="back"></van-nav-bar>
+    <div class="card" style="padding:4px 12px">
+      <div class="uni-item" v-for="n in newsList" :key="n.prov" @click="openNews(n.url)">
+        <div style="flex:1">
+          <div class="uni-name">{{ n.prov }}</div>
+          <div class="uni-meta">{{ n.desc }}</div>
+        </div>
+        <i class="van-icon van-icon-arrow" style="color:#c0c4cc"></i>
+      </div>
+    </div>
+    <div class="card" style="text-align:center;padding:20px">
+      <div style="font-size:12px;color:var(--text3);line-height:1.8">点击省份跳转到当地教育考试院官网<br>获取最新高考政策、批次线、投档线、录取动态</div>
+    </div>
+  </template>
+
   <!-- 底部Tab栏 -->
   <div style="position:fixed;bottom:0;left:0;right:0;z-index:100;background:#fff;border-top:1px solid #f0f0f0;display:flex;padding-bottom:env(safe-area-inset-bottom)">
     <div v-for="tab in tabs" :key="tab.view" @click="go(tab.view)" style="flex:1;text-align:center;padding:8px 0 6px;color:currentView===tab.view?'#2563eb':'#8a8f99';cursor:pointer">
@@ -695,6 +719,24 @@ createApp({
       fakeKeyword: '', fakeResult: null, fakes: [],
       officialNames: [], policyList: [], selPolicy: {}, showPolicy: false,
       myVolunteers: [],
+      newsList: [
+        { prov: '教育部阳光高考', desc: '全国高考政策/特殊类型招生/院校满意度', url: 'https://gaokao.chsi.com.cn' },
+        { prov: '北京教育考试院', desc: '北京高考资讯/分数线/录取', url: 'https://www.bjeea.cn' },
+        { prov: '上海市教育考试院', desc: '上海高考资讯/春考/综评', url: 'https://www.shmeea.edu.cn' },
+        { prov: '广东省教育考试院', desc: '广东高考资讯/投档线/录取', url: 'https://eea.gd.gov.cn' },
+        { prov: '福建省教育考试院', desc: '福建高考资讯/志愿填报/录取', url: 'https://www.eeafj.cn' },
+        { prov: '江苏省教育考试院', desc: '江苏高考资讯/选科/录取', url: 'https://www.jseea.cn' },
+        { prov: '浙江省教育考试院', desc: '浙江高考资讯/三位一体/录取', url: 'https://www.zjzs.net' },
+        { prov: '山东省教育招生考试院', desc: '山东高考资讯/一段二段线', url: 'https://www.sdzk.cn' },
+        { prov: '河南省教育考试院', desc: '河南高考资讯/志愿/录取', url: 'https://www.haeea.cn' },
+        { prov: '湖北省教育考试院', desc: '湖北高考资讯/志愿/录取', url: 'https://www.hbea.edu.cn' },
+        { prov: '湖南省教育考试院', desc: '湖南高考资讯/志愿/录取', url: 'https://www.hneao.edu.cn' },
+        { prov: '四川省教育考试院', desc: '四川高考资讯/志愿/录取', url: 'https://www.sceea.cn' },
+        { prov: '河北省教育考试院', desc: '河北高考资讯/志愿/录取', url: 'https://www.hebeea.edu.cn' },
+        { prov: '山东省教育考试院(备用)', desc: '山东备用入口', url: 'https://www.sdzk.cn' },
+        { prov: '安徽省教育招生考试院', desc: '安徽高考资讯/志愿/录取', url: 'https://www.ahzsks.cn' },
+        { prov: '重庆市教育考试院', desc: '重庆高考资讯/志愿/录取', url: 'https://www.cqksy.cn' },
+      ],
       specials: [
         { title: '强基计划', icon: 'award-o', color: '#2563eb', desc: '39所双一流A类高校基础学科招生，高考85%+校测15%，本硕博衔接培养', items: ['北大','清华','复旦','浙大','上交','中科大','南大','武大','华科','西交','哈工大','北航'] },
         { title: '综合评价', icon: 'balance-o', color: '#10b981', desc: '高考+校测+综合素质，多维度选拔', items: ['南方科技大学','上海科技大学','港中大深圳','昆山杜克','西交利物浦','深北莫'] },
@@ -735,6 +777,7 @@ createApp({
         { name: '野鸡大学', icon: 'warning-o', path: 'fake' },
         { name: '高考政策', icon: 'description', path: 'policy' },
         { name: '特殊类型', icon: 'award-o', path: 'special' },
+        { name: '高考资讯', icon: 'volume-o', path: 'news' },
       ]
     },
     tools() {
@@ -864,7 +907,7 @@ createApp({
         else if (diff >= -15 && diff <= 0) wen.push(item)
         else if (diff < -15 && diff > -40) bao.push(item)
       })
-      const sortBy = arr => arr.sort((a, b) => (b.s || 0) - (a.s || 0))
+      const sortBy = arr => arr.sort((a, b) => (b.p || 0) - (a.p || 0))
       return { chong: sortBy(chong).slice(0, 20), wen: sortBy(wen).slice(0, 20), bao: sortBy(bao).slice(0, 20) }
     },
     currentTest() { return this.testList.find(t => t.code === this.testCode) || { name: '', questions: [] } },
@@ -882,6 +925,9 @@ createApp({
     majorSchools() { return [...new Set(this.majorPosts.map(p => p.sc).filter(Boolean))] },
   },
   methods: {
+    openNews(url) {
+      window.open(url, '_blank')
+    },
     delVolunteer(idx) {
       const list = JSON.parse(localStorage.getItem('bk_volunteers') || '[]')
       list.splice(idx, 1)
@@ -1068,22 +1114,27 @@ createApp({
       const scoreMatch = q.match(/(\d{3})\s*分/)
       const score = scoreMatch ? Number(scoreMatch[1]) : (this.profile.score ? Number(this.profile.score) : 0)
 
-      // 1. 分数类问题 → 冲稳保推荐
+      // 1. 分数类问题 → 冲稳保推荐（含录取概率）
       if (score >= 300 && (q.includes('能上') || q.includes('什么大学') || q.includes('推荐') || q.includes('可以报') || q.includes('院校') || q.includes('学校'))) {
         const prov = this.profile.province || '福建'
         const seen = new Set(), rec = { chong: [], wen: [], bao: [] }
+        // 概率估算（与志愿页一致）
+        const prob = (diff) => {
+          if (diff > 20) return 5; if (diff > 10) return 15; if (diff > 0) return 30
+          if (diff >= -8) return 60; if (diff >= -15) return 75; if (diff >= -25) return 85; return 95
+        }
         this.admissions.filter(a => a.p === prov && a.s).forEach(a => {
           if (seen.has(a.ui)) return
           seen.add(a.ui)
           const u = this.universities.find(x => x.id === a.ui)
           if (!u) return
           const diff = a.s - score
-          if (diff > 0 && diff <= 20) rec.chong.push(u.name + '(' + a.s + '分)')
-          else if (diff >= -15 && diff <= 0) rec.wen.push(u.name + '(' + a.s + '分)')
-          else if (diff < -15 && diff > -40) rec.bao.push(u.name + '(' + a.s + '分)')
+          if (diff > 0 && diff <= 20) rec.chong.push(u.name + '(' + a.s + '分/' + prob(diff) + '%)')
+          else if (diff >= -15 && diff <= 0) rec.wen.push(u.name + '(' + a.s + '分/' + prob(diff) + '%)')
+          else if (diff < -15 && diff > -40) rec.bao.push(u.name + '(' + a.s + '分/' + prob(diff) + '%)')
         })
         if (rec.chong.length || rec.wen.length || rec.bao.length) {
-          ctx.push(`【本地真实录取数据 · ${prov} · ${score}分】\n可冲击(差20分内): ${rec.chong.slice(0,8).join('、')}\n较稳妥(低15分内): ${rec.wen.slice(0,8).join('、')}\n可保底(低15-40分): ${rec.bao.slice(0,8).join('、')}`)
+          ctx.push(`【本地真实录取数据 · ${prov} · ${score}分（含录取概率估算）】\n🔥 可冲击(概率5-30%): ${rec.chong.slice(0,8).join('、')}\n💙 较稳妥(概率60-75%): ${rec.wen.slice(0,8).join('、')}\n💚 可保底(概率85-95%): ${rec.bao.slice(0,8).join('、')}\n推荐策略: 冲2-3所+稳4-5所+保2-3所，服从调剂降低退档风险`)
         }
       }
 
@@ -1233,6 +1284,10 @@ createApp({
     },
     doPrint() {
       window.print()
+    },
+    doExportPdf() {
+      vant.showToast({ type: 'success', message: '在打印对话框中选择"另存为PDF"即可导出' })
+      setTimeout(() => window.print(), 800)
     },
     onSlProv({ selectedOptions }) {
       this.slProvince = selectedOptions[0].text
