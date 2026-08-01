@@ -619,6 +619,15 @@ createApp({
       testFinished: false,
       testResult: {},
       aiConfigured: false,
+      aiProvider: 'zhipu',
+      aiProviders: [
+        { key: 'zhipu', name: '智谱GLM', baseUrl: 'https://open.bigmodel.cn/api/paas/v4', model: 'glm-4.7-flash', note: '完全免费' },
+        { key: 'deepseek', name: 'DeepSeek', baseUrl: 'https://api.deepseek.com/v1', model: 'deepseek-chat', note: '低价' },
+        { key: 'qwen', name: '通义千问', baseUrl: 'https://dashscope.aliyuncs.com/compatible-mode/v1', model: 'qwen-plus', note: '低价' },
+        { key: 'kimi', name: 'Kimi', baseUrl: 'https://api.moonshot.cn/v1', model: 'kimi-k2', note: '有免费额度' },
+        { key: 'openai', name: 'OpenAI', baseUrl: 'https://api.openai.com/v1', model: 'gpt-4o-mini', note: '需科学上网' },
+        { key: 'ollama', name: 'Ollama本地', baseUrl: 'http://localhost:11434/v1', model: 'qwen2.5', note: '本地免费' },
+      ],
       aiConfig: {},
       aiInput: '',
       aiMessages: [{ role: 'ai', content: '你好！我是高考志愿AI助手。可以问我：我的分数能上什么大学？某个专业怎么样？' }],
@@ -928,6 +937,30 @@ createApp({
       const t = this.testList.find(x => x.code === this.testCode)
       this.testAnswers = new Array((t.questions || []).length).fill(null)
     },
+    selectProvider(p) {
+      this.aiProvider = p.key
+      this.aiConfig.baseUrl = p.baseUrl
+      this.aiConfig.model = p.model
+    },
+    async testAi() {
+      if (!this.aiConfig.apiKey) return vant.showToast('请先填写API Key')
+      if (!this.aiConfig.baseUrl) return vant.showToast('请填写接口地址')
+      const loading = vant.showLoadingToast({ message: '测试连接中...', forbidClick: true })
+      try {
+        const base = (this.aiConfig.baseUrl || '').replace(/\/$/, '')
+        const res = await fetch(base + '/chat/completions', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + this.aiConfig.apiKey },
+          body: JSON.stringify({ model: this.aiConfig.model || 'glm-4.7-flash', messages: [{ role: 'user', content: '你好' }], max_tokens: 10 })
+        })
+        loading.close()
+        if (res.ok) { vant.showToast({ type: 'success', message: '连接成功！AI已就绪' }); this.saveAi() }
+        else { vant.showToast('连接失败：HTTP ' + res.status + '（检查Key或地址）') }
+      } catch (e) {
+        loading.close()
+        vant.showToast('连接失败：' + e.message.slice(0, 30))
+      }
+    },
     saveAi() {
       localStorage.setItem('bk_ai_config', JSON.stringify(this.aiConfig))
       this.aiConfigured = true
@@ -947,11 +980,22 @@ createApp({
       }
       try {
         const base = (this.aiConfig.baseUrl || '').replace(/\/$/, '')
-        const res = await fetch(base + '/chat/completions', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + this.aiConfig.apiKey },
-          body: JSON.stringify({ model: this.aiConfig.model || 'glm-4.7-flash', messages: [{ role: 'user', content: text }] })
-        })
+        // 本地/局域网部署时走同源代理避免CORS；GitHub Pages直连
+        const useProxy = location.protocol.startsWith('http') && location.port !== '' && !location.hostname.includes('github.io')
+        let res
+        if (useProxy) {
+          res = await fetch('/api/ai', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ provider: this.aiProvider, apiKey: this.aiConfig.apiKey, model: this.aiConfig.model, messages: [{ role: 'user', content: text }] })
+          })
+        } else {
+          res = await fetch(base + '/chat/completions', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + this.aiConfig.apiKey },
+            body: JSON.stringify({ model: this.aiConfig.model || 'glm-4.7-flash', messages: [{ role: 'user', content: text }] })
+          })
+        }
         const data = await res.json()
         this.aiMessages.push({ role: 'ai', content: (data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content) || '抱歉，未能获取回答' })
       } catch (e) {
