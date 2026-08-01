@@ -162,7 +162,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'PingFang SC','Helvetica Neue'
         <div class="rec-item" v-for="(r,i) in volResult.chong.slice(0,8)" :key="'c'+i" @click="goUni(r.id)">
           <span class="rec-rank">{{i+1}}</span>
           <div style="flex:1"><div class="rec-name">{{r.name}}<span v-if="r.level && r.level.includes('985')" class="tag tag-985">985</span></div>
-          <div class="rec-meta">{{r.y}}年 {{r.s}}分 · 位次{{r.r}}</div></div>
+          <div class="rec-meta">{{r.y}}年 {{r.s}}分 · 位次{{r.r}} · <span :style="{color:r.p>=70?'var(--success)':r.p>=40?'var(--primary)':'var(--danger)',fontWeight:600}">{{r.p}}%概率</span></div></div>
           <i class="van-icon van-icon-arrow" style="color:#c0c4cc"></i>
         </div>
       </div>
@@ -170,7 +170,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'PingFang SC','Helvetica Neue'
         <div class="card-title"><i class="van-icon van-icon-balance-o" style="color:var(--primary)"></i>较稳妥院校</div>
         <div class="rec-item" v-for="(r,i) in volResult.wen.slice(0,8)" :key="'w'+i" @click="goUni(r.id)">
           <span class="rec-rank">{{i+1}}</span>
-          <div style="flex:1"><div class="rec-name">{{r.name}}</div><div class="rec-meta">{{r.y}}年 {{r.s}}分 · 位次{{r.r}}</div></div>
+          <div style="flex:1"><div class="rec-name">{{r.name}}</div><div class="rec-meta">{{r.y}}年 {{r.s}}分 · 位次{{r.r}} · <span :style="{color:r.p>=70?'var(--success)':r.p>=40?'var(--primary)':'var(--danger)',fontWeight:600}">{{r.p}}%概率</span></div></div>
           <i class="van-icon van-icon-arrow" style="color:#c0c4cc"></i>
         </div>
       </div>
@@ -178,7 +178,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'PingFang SC','Helvetica Neue'
         <div class="card-title"><i class="van-icon van-icon-shield-o" style="color:var(--success)"></i>可保底院校</div>
         <div class="rec-item" v-for="(r,i) in volResult.bao.slice(0,8)" :key="'b'+i" @click="goUni(r.id)">
           <span class="rec-rank">{{i+1}}</span>
-          <div style="flex:1"><div class="rec-name">{{r.name}}</div><div class="rec-meta">{{r.y}}年 {{r.s}}分 · 位次{{r.r}}</div></div>
+          <div style="flex:1"><div class="rec-name">{{r.name}}</div><div class="rec-meta">{{r.y}}年 {{r.s}}分 · 位次{{r.r}} · <span :style="{color:r.p>=70?'var(--success)':r.p>=40?'var(--primary)':'var(--danger)',fontWeight:600}">{{r.p}}%概率</span></div></div>
           <i class="van-icon van-icon-arrow" style="color:#c0c4cc"></i>
         </div>
       </div>
@@ -420,6 +420,10 @@ body{font-family:-apple-system,BlinkMacSystemFont,'PingFang SC','Helvetica Neue'
           <div class="dim-header"><span class="dim-name">{{d.name}}</span><span class="dim-score">{{d.score}}</span></div>
           <van-progress :percentage="d.pct" color="#2563eb" stroke-width="8"></van-progress>
         </div>
+        <div v-if="testResult.majorRec" style="background:#f0fdf4;border-radius:10px;padding:14px;margin-top:16px;text-align:left">
+          <div style="font-size:13px;font-weight:600;color:#059669;margin-bottom:8px"><i class="van-icon van-icon-award-o"></i> 推荐专业方向（基于测评结果）</div>
+          <div style="font-size:13px;color:var(--text);line-height:1.8">{{testResult.majorRec}}</div>
+        </div>
         <div style="font-size:11px;color:var(--text3);margin-top:20px">本测试仅供自我了解参考，不构成专业诊断</div>
         <van-button type="primary" round block style="margin-top:16px" @click="resetTest">重新测试</van-button>
         <van-button plain round block style="margin-top:10px" @click="view='psychology'">返回</van-button>
@@ -576,6 +580,41 @@ body{font-family:-apple-system,BlinkMacSystemFont,'PingFang SC','Helvetica Neue'
     </div>
   </template>
 
+  <template v-else-if="view === 'my-volunteers'">
+    <van-nav-bar title="我的志愿表" left-arrow @click-left="back"></van-nav-bar>
+    <div v-if="myVolunteers.length">
+      <div class="card" v-for="(v, vi) in myVolunteers" :key="vi">
+        <div class="card-title" style="font-size:14px">
+          <i class="van-icon van-icon-orders-o" style="color:var(--primary)"></i>
+          {{ v.profile.province }} · {{ v.profile.score }}分 · {{ v.time }}
+          <span style="flex:1"></span>
+          <span style="font-size:12px;color:var(--danger);cursor:pointer" @click="delVolunteer(vi)">删除</span>
+        </div>
+        <div style="font-size:12px;color:var(--text2);margin-bottom:8px">{{ (v.profile.subjects||[]).join('+') }} · 冲{{v.chong.length}} 稳{{v.wen.length}} 保{{v.bao.length}}</div>
+        <div class="rec-item" v-for="(r, i) in v.chong.slice(0,3)" :key="'c'+i" @click="goUniByName(r.name)">
+          <span style="font-size:11px;color:#dc2626;width:24px;flex-shrink:0">冲{{i+1}}</span>
+          <div style="flex:1;font-size:13px">{{r.name}}</div>
+          <span style="font-size:12px;color:var(--text2)">{{r.score}}分</span>
+        </div>
+        <div class="rec-item" v-for="(r, i) in v.wen.slice(0,3)" :key="'w'+i" @click="goUniByName(r.name)">
+          <span style="font-size:11px;color:var(--primary);width:24px;flex-shrink:0">稳{{i+1}}</span>
+          <div style="flex:1;font-size:13px">{{r.name}}</div>
+          <span style="font-size:12px;color:var(--text2)">{{r.score}}分</span>
+        </div>
+        <div class="rec-item" v-for="(r, i) in v.bao.slice(0,3)" :key="'b'+i" @click="goUniByName(r.name)">
+          <span style="font-size:11px;color:var(--success);width:24px;flex-shrink:0">保{{i+1}}</span>
+          <div style="flex:1;font-size:13px">{{r.name}}</div>
+          <span style="font-size:12px;color:var(--text2)">{{r.score}}分</span>
+        </div>
+      </div>
+    </div>
+    <div v-else class="card" style="text-align:center;padding:40px 20px">
+      <i class="van-icon van-icon-orders-o" style="font-size:48px;color:#c0c4cc"></i>
+      <p style="color:var(--text2);margin:12px 0 20px">还没有保存的志愿表</p>
+      <van-button type="primary" round @click="go('volunteer')">去生成志愿方案</van-button>
+    </div>
+  </template>
+
   <!-- 底部Tab栏 -->
   <div style="position:fixed;bottom:0;left:0;right:0;z-index:100;background:#fff;border-top:1px solid #f0f0f0;display:flex;padding-bottom:env(safe-area-inset-bottom)">
     <div v-for="tab in tabs" :key="tab.view" @click="go(tab.view)" style="flex:1;text-align:center;padding:8px 0 6px;color:currentView===tab.view?'#2563eb':'#8a8f99';cursor:pointer">
@@ -655,6 +694,7 @@ createApp({
       testList: [],
       fakeKeyword: '', fakeResult: null, fakes: [],
       officialNames: [], policyList: [], selPolicy: {}, showPolicy: false,
+      myVolunteers: [],
       specials: [
         { title: '强基计划', icon: 'award-o', color: '#2563eb', desc: '39所双一流A类高校基础学科招生，高考85%+校测15%，本硕博衔接培养', items: ['北大','清华','复旦','浙大','上交','中科大','南大','武大','华科','西交','哈工大','北航'] },
         { title: '综合评价', icon: 'balance-o', color: '#10b981', desc: '高考+校测+综合素质，多维度选拔', items: ['南方科技大学','上海科技大学','港中大深圳','昆山杜克','西交利物浦','深北莫'] },
@@ -703,6 +743,7 @@ createApp({
         { name: '院校满意度', desc: '600万人真实投票', icon: 'like-o', path: 'satisfaction', bg: '#ecfdf5', color: '#059669' },
         { name: '专业过来人建议', desc: '1万+学长学姐经验', icon: 'friends-o', path: 'majors', bg: '#fdf4ff', color: '#9333ea' },
         { name: '省批次线', desc: '各省录取控制线', icon: 'bar-chart-o', path: 'scoreline', bg: '#eff6ff', color: '#2563eb' },
+        { name: '我的志愿表', desc: '查看已保存的方案', icon: 'orders-o', path: 'my-volunteers', bg: '#fef2f2', color: '#dc2626' },
       ]
     },
     filteredUnis() {
@@ -802,13 +843,23 @@ createApp({
       if (!score) return { chong: [], wen: [], bao: [] }
       const prov = this.profile.province
       const seen = new Set(), chong = [], wen = [], bao = []
+      // 概率估算：基于分数差（录取线 vs 考生分数）
+      const prob = (diff) => {
+        if (diff > 20) return 5          // 差20分以上 → 5%以下
+        if (diff > 10) return 15         // 差10-20分 → 15%
+        if (diff > 0) return 30          // 差0-10分 → 30%
+        if (diff >= -8) return 60        // 高0-8分 → 60%
+        if (diff >= -15) return 75       // 高8-15分 → 75%
+        if (diff >= -25) return 85       // 高15-25分 → 85%
+        return 95                        // 高25分以上 → 95%
+      }
       this.admissions.forEach(a => {
         if (a.p !== prov || !a.s || seen.has(a.ui)) return
         seen.add(a.ui)
         const diff = a.s - score
         const u = this.universities.find(u => u.id === a.ui)
         if (!u) return
-        const item = { ...u, y: a.y, s: a.s, r: a.r }
+        const item = { ...u, y: a.y, s: a.s, r: a.r, p: prob(diff) }
         if (diff > 0 && diff <= 20) chong.push(item)
         else if (diff >= -15 && diff <= 0) wen.push(item)
         else if (diff < -15 && diff > -40) bao.push(item)
@@ -831,10 +882,17 @@ createApp({
     majorSchools() { return [...new Set(this.majorPosts.map(p => p.sc).filter(Boolean))] },
   },
   methods: {
+    delVolunteer(idx) {
+      const list = JSON.parse(localStorage.getItem('bk_volunteers') || '[]')
+      list.splice(idx, 1)
+      localStorage.setItem('bk_volunteers', JSON.stringify(list))
+      this.myVolunteers = list
+      vant.showToast('已删除')
+    },
     go(view) {
       this.view = view
-      if (view === 'volunteer' || view === 'universities' || view === 'psychology') {
-        // 主页面
+      if (view === 'my-volunteers') {
+        this.myVolunteers = JSON.parse(localStorage.getItem('bk_volunteers') || '[]')
       }
       window.scrollTo(0, 0)
     },
@@ -898,6 +956,39 @@ createApp({
       if (this.testIdx < this.testTotal - 1) this.testIdx++
       else this.computeTestResult()
     },
+    // 根据测评维度生成专业推荐
+    genMajorRec(dimArr) {
+      const code = this.testCode
+      const get = (name) => { const d = dimArr.find(x => x.name === name); return d ? parseFloat(d.score) : 3 }
+      if (code === 'TALENT-TEST') {
+        const top = [...dimArr].sort((a, b) => parseFloat(b.score) - parseFloat(a.score))[0]
+        const map = { '创造力': '设计学、数字媒体艺术、广告学、产品设计、人工智能（创意方向）', '人际交往': '工商管理、人力资源管理、市场营销、心理学、社会工作、教育管理', '逻辑分析': '计算机科学与技术、软件工程、数学与应用数学、金融工程、自动化', '艺术感知': '美术学、音乐学、视觉传达设计、建筑学、服装设计', '语言表达': '汉语言文学、英语、翻译、新闻传播学、法学、播音主持' }
+        return top ? map[top.name] + '（你最强的天赋维度：' + top.name + '）' : '计算机、金融、师范等'
+      }
+      if (code === 'BF-2') {
+        const score = dimArr.reduce((s, d) => s + parseFloat(d.score), 0) / dimArr.length
+        if (score >= 4) return '开放性/尽责性突出：适合计算机、数学、科研类；或管理类（工商管理、工程管理）'
+        return '适合：软件工程、电子信息、临床医学、金融学、师范教育等主流方向（结合兴趣选择）'
+      }
+      if (code === 'COLOR-PERSONALITY') {
+        const top = [...dimArr].sort((a, b) => parseFloat(b.score) - parseFloat(a.score))[0]
+        if (top) {
+          const map = { '红色': '管理类（工商管理、公共管理）、市场营销、土木工程、机械工程（行动派）', '蓝色': '计算机、数学、物理、会计学、审计学（严谨派）', '黄色': '广告学、新闻传播、数字媒体、音乐、市场营销（创意派）', '绿色': '教育学、心理学、护理学、人力资源、社会工作（和谐派）' }
+          return map[top.name] || '综合发展，可参考计算机/金融/师范'
+        }
+      }
+      if (code === 'IQ-TEST') {
+        const logic = get('逻辑推理能力'), math = get('数学运算能力')
+        if (logic >= 4 && math >= 4) return '逻辑与数学能力强：强烈推荐计算机科学与技术、软件工程、人工智能、数学、金融工程'
+        if (math >= 4) return '数学能力强：推荐数学、物理、计算机、金融、统计'
+        if (logic >= 4) return '逻辑能力强：推荐计算机、法学、哲学、管理学'
+        return '各维度均衡：可参考计算机、医学、师范、经管等主流专业'
+      }
+      if (code === 'TMMS') {
+        return '情绪智力良好：适合需要沟通协调的专业——心理学、人力资源管理、市场营销、师范教育、护理学'
+      }
+      return '综合参考：计算机/软件（逻辑型）、临床医学/生物（研究型）、金融/经济（分析型）、师范/心理（关怀型）、设计/传媒（创造型）'
+    },
     computeTestResult() {
       const t = this.currentTest
       const dims = {}
@@ -926,7 +1017,7 @@ createApp({
         summary = '平均分 ' + avg.toFixed(1) + ' / 5'
         title = avg >= 4 ? '优秀' : avg >= 3 ? '良好' : '有提升空间'
       }
-      this.testResult = { title, summary, dims: dimArr }
+      this.testResult = { title, summary, dims: dimArr, majorRec: this.genMajorRec(dimArr) }
       this.testFinished = true
       const records = JSON.parse(localStorage.getItem('bk_test_records') || '[]')
       records.push({ code: this.testCode, time: Date.now(), result: title })
