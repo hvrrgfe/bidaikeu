@@ -4,6 +4,12 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <meta name="theme-color" content="#2563eb">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" type="image/png" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="高考帮">
 <title>高考帮 · 志愿填报助手</title>
 <!-- Vant 4 + Vue 3 本地引用（离线可用） -->
 <link rel="stylesheet" href="lib/vant.css">
@@ -1421,6 +1427,15 @@ createApp({
     const ai = JSON.parse(localStorage.getItem('bk_ai_config') || '{}')
     this.aiConfig = ai
     this.aiConfigured = !!(ai.baseUrl && ai.apiKey) || localStorage.getItem('bk_ai_demo') === '1'
+
+    // 注册 Service Worker（PWA离线支持，仅http/https环境）
+    if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost' || location.hostname === '127.0.0.1')) {
+      try {
+        navigator.serviceWorker.register('service-worker.js').then(() => {
+          console.log('PWA离线支持已启用')
+        }).catch(e => console.log('SW注册跳过:', e.message))
+      } catch (e) { /* 忽略 */ }
+    }
 
     // 加载数据
     const load = async (path) => {
