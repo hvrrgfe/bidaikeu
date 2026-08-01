@@ -430,11 +430,16 @@ body{font-family:-apple-system,BlinkMacSystemFont,'PingFang SC','Helvetica Neue'
     <van-nav-bar title="AI志愿助手" left-arrow @click-left="back"></van-nav-bar>
     <div class="card" v-if="!aiConfigured">
       <div class="card-title"><i class="van-icon van-icon-setting-o" style="color:var(--primary)"></i>配置 AI 接口</div>
-      <p style="font-size:12px;color:var(--text2);margin-bottom:16px;line-height:1.6">使用任意 OpenAI 兼容 API（智谱GLM-4.7-flash免费、DeepSeek等），实现智能志愿问答。</p>
+      <p style="font-size:12px;color:var(--text2);margin-bottom:16px;line-height:1.6">选择一个 OpenAI 兼容 API 提供商，填入 Key 即可真实使用（非演示）。</p>
+      <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px">
+        <span v-for="p in aiProviders" :key="p.key" class="cat-tag" :class="{active:aiProvider===p.key}" @click="selectProvider(p)">{{p.name}}</span>
+      </div>
       <van-field v-model="aiConfig.baseUrl" label="接口地址" placeholder="https://open.bigmodel.cn/api/paas/v4"></van-field>
       <van-field v-model="aiConfig.apiKey" label="API Key" type="password" placeholder="sk-..."></van-field>
       <van-field v-model="aiConfig.model" label="模型" placeholder="glm-4.7-flash"></van-field>
-      <van-button type="primary" block round style="margin-top:16px" @click="saveAi">保存配置</van-button>
+      <div style="font-size:11px;color:var(--text3);margin:8px 0;line-height:1.6">提示：智谱 GLM-4.7-flash 完全免费；DeepSeek 价格低。Key 只存在本机浏览器，不会上传。</div>
+      <van-button type="primary" plain block round style="margin-top:8px" @click="testAi">测试连接</van-button>
+      <van-button type="primary" block round style="margin-top:10px" @click="saveAi">保存配置</van-button>
       <van-button plain block round style="margin-top:10px" @click="useAiDemo">使用演示模式（无需Key）</van-button>
     </div>
     <template v-else>
@@ -449,6 +454,12 @@ body{font-family:-apple-system,BlinkMacSystemFont,'PingFang SC','Helvetica Neue'
       </div>
       <div style="display:flex;flex-wrap:wrap;gap:8px;padding:10px 16px">
         <span v-for="s in aiSuggestions" :key="s" class="sug-tag" @click="aiAsk(s)">{{s}}</span>
+      </div>
+      <div style="padding:0 16px 16px">
+        <div style="font-size:12px;color:var(--text3);margin-bottom:8px">— 学习辅导场景 —</div>
+        <div style="display:flex;flex-wrap:wrap;gap:8px">
+          <span v-for="s in studyPrompts" :key="s.name" class="sug-tag" style="background:#fdf4ff;color:#9333ea" @click="aiUsePrompt(s)">{{s.name}}</span>
+        </div>
       </div>
     </template>
   </template>
@@ -612,6 +623,22 @@ createApp({
       aiInput: '',
       aiMessages: [{ role: 'ai', content: '你好！我是高考志愿AI助手。可以问我：我的分数能上什么大学？某个专业怎么样？' }],
       aiSuggestions: ['530分能上什么大学？', '软件工程专业怎么样？', '物理类600分推荐院校', '什么是强基计划？'],
+      studyPrompts: [
+        { name: '错题分析', prompt: '我是一名高中生，这道题我做错了：【粘贴题目和你的解答】。正确答案是：【答案】。请帮我：1.分析做错的根本原因 2.讲解正确解题思路 3.总结这类题型的通用方法 4.出2道同类型变式题' },
+        { name: '费曼学习法', prompt: '# 角色\n你是费曼学习法的践行者，擅长通过追问和简化来检验和加深对知识的理解。\n\n# 费曼学习法流程\n当我告诉你一个概念后，请按以下步骤进行：\n1. **请我用自己的话解释**：让我尝试解释这个概念\n2. **找出漏洞**：指出我解释中的不准确、遗漏或含糊之处\n3. **追问深入**：问3-5个深入的问题，检验我的理解深度\n4. **简化挑战**：要求我用一个比喻向10岁小孩解释\n5. **总结反馈**：评估我的理解程度(0-100%)，指出需要加强的部分\n\n# 约束\n- 不要直接给答案，引导我自己思考\n- 如果我回答不上来，给提示而非答案\n- 鼓励性的语气，保护学习积极性' },
+        { name: '教授讲解', prompt: '# 角色\n你是一位大学教授级别的讲师，以"把复杂概念讲得连小学生都能懂"著称，曾获得最佳教学奖。\n\n# 任务\n请深入浅出地讲解我提出的知识点/概念。\n\n# 讲解结构\n1. **一句话定义**：最简洁的解释\n2. **生活类比**：用日常生活中的事物类比\n3. **详细解释**：概念的来龙去脉、核心原理\n4. **具体示例**：2-3个由浅入深的例子\n5. **常见误区**：大家容易搞错的地方\n6. **关联知识**：与哪些相关概念有联系\n7. **记忆口诀**：帮助记忆的小技巧(如有)\n\n# 约束\n- 先确认我的知识水平(如果我没说明，默认高中生水平)\n- 专业术语首次出现时给出解释\n- 如果概念有争议，客观呈现不同观点' },
+        { name: '每周计划', prompt: "I'm a student with the following courses and commitments:\n\n[Courses: List your courses]\n[Deadlines: List upcoming deadlines]\n[Available hours per day: X hours]\n[Preferred study times: e.g., morning, afternoon, evening]\n\nPlease create a personalized weekly study schedule that:\n1. Allocates sufficient time for each course based on difficulty and workload\n2. Includes regular breaks (10-15 minutes every hour)\n3. Schedules review sessions before exams\n4. Balances study time with rest and other commitments\n5. Adapts to my preferred study times\n\nFormat the schedule as a clear, day-by-day breakdown with specific time slots." },
+        { name: '知识梳理', prompt: '请帮我梳理【科目-章节】的知识框架：1.以思维导图形式呈现 2.包含所有核心公式定理 3.标注知识点逻辑关系 4.标出高考高频考点（★） 5.每个考点附1个典型例题' },
+        { name: '错词记忆', prompt: '我要记忆【词汇清单】，请帮我：1.按艾宾浩斯遗忘曲线制定复习计划 2.为每个单词造例句 3.找出易混淆组合 4.生成自测题' },
+        { name: '模拟出题', prompt: '请帮我生成一套【科目-考试】模拟卷：1.题型分布与真实考试一致 2.覆盖重点知识 3.难度基础60%+中档30%+难题10% 4.附详细答案解析 5.标注每题知识点' },
+        { name: '作文批改', prompt: '我写了一篇【英语/语文】作文：【粘贴作文】。题目：【题目】。请帮我：1.按评分标准打分 2.逐句改错 3.改写成高级表达 4.示范范文 5.总结写作模板' },
+        { name: '目标拆解', prompt: '我的长期目标是【2029年考入浙江大学软件工程】，现在高一，中考677分。请帮我：1.拆解为高一高二高三各阶段小目标 2.每阶段设量化里程碑 3.分析差距 4.制定行动计划 5.设置3个检查点' },
+        { name: '考前冲刺', prompt: '我下周参加【考试】，最近很焦虑。请给我：1.考前3天科学复习安排 2.考场时间分配 3.遇难题怎么办 4.缓解焦虑方法 5.考后复盘步骤' },
+        { name: '英语翻译', prompt: '我想让你充当英文翻译员、拼写纠正员和改进员。我会用任何语言与你交谈，你会检测语言，翻译它并用我的文本的更正和改进版本用英文回答。我希望你用更优美优雅的高级英语单词和句子替换我简化的 A0 级单词和句子。保持相同的意思，但使它们更文艺。我的第一句话是："【写你的中文句子】"' },
+        { name: '英语发音', prompt: '我想让你为说汉语的人充当英语发音助手。我会给你写句子，你只会回答他们的发音，没有别的。回复不能是我的句子的翻译，而只能是发音。发音应使用汉语谐音进行注音。不要在回复上写解释。我的第一句话是"【英语句子】"' },
+        { name: '数学老师', prompt: '我想让你扮演一名数学老师。我将提供一些数学方程式或概念，你的工作是用易于理解的术语来解释它们。这可能包括提供解决问题的分步说明、用视觉演示各种技术或建议在线资源以供进一步研究。我的第一个请求是"我需要帮助来理解【数学概念，如概率】是如何工作的。"' },
+        { name: '高频词汇', prompt: '请帮我列出【英语6级/高考】考试出现频率最高的100个【名词/动词/短语】，请按照频率从高到底排序，并给出每个词的中文释义和例句。' },
+      ],
       // 数据
       universities: [], satisfaction: [], admissions: [], posts: [],
       ranks: {}, tests: {},
@@ -908,6 +935,7 @@ createApp({
     },
     useAiDemo() { localStorage.setItem('bk_ai_demo', '1'); this.aiConfigured = true },
     aiAsk(s) { this.aiInput = s; this.aiSend() },
+    aiUsePrompt(p) { this.aiInput = p.prompt; this.aiSend() },
     async aiSend() {
       const text = this.aiInput.trim()
       if (!text) return
