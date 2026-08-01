@@ -91,6 +91,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,'PingFang SC','Helvetica Neue'
 .dim-item{margin-bottom:14px}.dim-header{display:flex;justify-content:space-between;margin-bottom:6px}
 .dim-name{font-size:13px;font-weight:600}.dim-score{font-size:13px;color:var(--primary)}
 .empty-mini{color:var(--text3);font-size:13px;text-align:center;padding:20px}
+.fake-list{display:flex;flex-wrap:wrap;gap:6px}
+.fake-tag{padding:3px 10px;background:#fef2f2;color:#dc2626;border-radius:12px;font-size:11px}
 .safe-bottom{padding-bottom:env(safe-area-inset-bottom)}
 </style>
 </head>
@@ -180,9 +182,49 @@ body{font-family:-apple-system,BlinkMacSystemFont,'PingFang SC','Helvetica Neue'
           <i class="van-icon van-icon-arrow" style="color:#c0c4cc"></i>
         </div>
       </div>
+      <div style="margin:0 16px 16px;display:flex;gap:10px">
+        <van-button type="primary" block round size="large" @click="printVolunteer">打印志愿表</van-button>
+      </div>
     </template>
     <div style="height:20px"></div>
   </template>
+
+  <!-- 打印视图 -->
+  <div v-if="view === 'print'">
+    <van-nav-bar title="志愿表预览" left-arrow @click-left="back">
+      <template #right><span style="font-size:14px;color:#2563eb" @click="doPrint">打印</span></template>
+    </van-nav-bar>
+    <div id="print-area" style="background:#fff;padding:24px 20px">
+      <div style="text-align:center;border-bottom:2px solid #1f2937;padding-bottom:12px;margin-bottom:16px">
+        <div style="font-size:20px;font-weight:700">高考志愿表（冲稳保方案）</div>
+        <div style="font-size:12px;color:#6b7280;margin-top:6px">
+          {{profile.province}} · {{profile.year}}年 · {{(profile.subjects||[]).join('+')}} · {{profile.score}}分
+        </div>
+      </div>
+      <div style="margin-bottom:16px">
+        <div style="font-size:15px;font-weight:700;color:#dc2626;margin-bottom:8px">一、可冲击院校（录取概率20%-40%）</div>
+        <table style="width:100%;border-collapse:collapse;font-size:13px">
+          <tr style="background:#f9fafb"><th style="border:1px solid #e5e7eb;padding:6px;text-align:left">序号</th><th style="border:1px solid #e5e7eb;padding:6px;text-align:left">院校</th><th style="border:1px solid #e5e7eb;padding:6px">录取分</th><th style="border:1px solid #e5e7eb;padding:6px">位次</th></tr>
+          <tr v-for="(r,i) in volResult.chong.slice(0,10)" :key="i"><td style="border:1px solid #e5e7eb;padding:6px">{{i+1}}</td><td style="border:1px solid #e5e7eb;padding:6px">{{r.name}}</td><td style="border:1px solid #e5e7eb;padding:6px;text-align:center">{{r.s}}</td><td style="border:1px solid #e5e7eb;padding:6px;text-align:center">{{r.r||'-'}}</td></tr>
+        </table>
+      </div>
+      <div style="margin-bottom:16px">
+        <div style="font-size:15px;font-weight:700;color:#2563eb;margin-bottom:8px">二、较稳妥院校（录取概率40%-70%）</div>
+        <table style="width:100%;border-collapse:collapse;font-size:13px">
+          <tr style="background:#f9fafb"><th style="border:1px solid #e5e7eb;padding:6px;text-align:left">序号</th><th style="border:1px solid #e5e7eb;padding:6px;text-align:left">院校</th><th style="border:1px solid #e5e7eb;padding:6px">录取分</th><th style="border:1px solid #e5e7eb;padding:6px">位次</th></tr>
+          <tr v-for="(r,i) in volResult.wen.slice(0,10)" :key="i"><td style="border:1px solid #e5e7eb;padding:6px">{{i+1}}</td><td style="border:1px solid #e5e7eb;padding:6px">{{r.name}}</td><td style="border:1px solid #e5e7eb;padding:6px;text-align:center">{{r.s}}</td><td style="border:1px solid #e5e7eb;padding:6px;text-align:center">{{r.r||'-'}}</td></tr>
+        </table>
+      </div>
+      <div style="margin-bottom:16px">
+        <div style="font-size:15px;font-weight:700;color:#10b981;margin-bottom:8px">三、可保底院校（录取概率70%+）</div>
+        <table style="width:100%;border-collapse:collapse;font-size:13px">
+          <tr style="background:#f9fafb"><th style="border:1px solid #e5e7eb;padding:6px;text-align:left">序号</th><th style="border:1px solid #e5e7eb;padding:6px;text-align:left">院校</th><th style="border:1px solid #e5e7eb;padding:6px">录取分</th><th style="border:1px solid #e5e7eb;padding:6px">位次</th></tr>
+          <tr v-for="(r,i) in volResult.bao.slice(0,10)" :key="i"><td style="border:1px solid #e5e7eb;padding:6px">{{i+1}}</td><td style="border:1px solid #e5e7eb;padding:6px">{{r.name}}</td><td style="border:1px solid #e5e7eb;padding:6px;text-align:center">{{r.s}}</td><td style="border:1px solid #e5e7eb;padding:6px;text-align:center">{{r.r||'-'}}</td></tr>
+        </table>
+      </div>
+      <div style="font-size:11px;color:#9ca3af;margin-top:12px">提示：以上推荐基于历史录取数据，实际以当年官方公布为准。建议按"冲-稳-保"梯度填报，服从调剂可降低退档风险。</div>
+    </div>
+  </div>
 
   <template v-else-if="view === 'volunteer-setting'">
     <van-nav-bar title="设置高考信息" left-arrow @click-left="back"></van-nav-bar>
@@ -413,7 +455,12 @@ body{font-family:-apple-system,BlinkMacSystemFont,'PingFang SC','Helvetica Neue'
 
   <template v-else-if="view === 'scoreline'">
     <van-nav-bar title="省批次线" left-arrow @click-left="back"></van-nav-bar>
-    <div class="year-tabs"><span v-for="y in [2025,2024]" :key="y" class="year-tag" :class="{active:slYear===y}" @click="slYear=y">{{y}}</span></div>
+    <div class="year-tabs" style="display:flex;justify-content:space-between;align-items:center">
+      <div style="display:flex;gap:8px">
+        <span v-for="y in [2025,2024,2023]" :key="y" class="year-tag" :class="{active:slYear===y}" @click="slYear=y">{{y}}</span>
+      </div>
+      <span class="year-tag" style="border:1px solid #2563eb;color:#2563eb" @click="slProvPicker=true">{{slProvince}}▾</span>
+    </div>
     <div class="card" style="padding:4px 12px">
       <div class="uni-item" v-for="l in slLines" :key="l.name">
         <div style="flex:1"><div class="uni-name">{{l.name}}</div><div class="uni-meta">{{l.note}}</div></div>
@@ -421,15 +468,18 @@ body{font-family:-apple-system,BlinkMacSystemFont,'PingFang SC','Helvetica Neue'
         <span style="color:#8b5cf6;font-weight:600">历史{{l.hist}}</span>
       </div>
     </div>
+    <van-popup v-model:show="slProvPicker" position="bottom" round>
+      <van-picker :columns="slProvinces" @confirm="onSlProv" @cancel="slProvPicker=false" title="选择省份"></van-picker>
+    </van-popup>
   </template>
 
   <template v-else-if="view === 'rank'">
     <van-nav-bar title="一分一段 · 分数位次换算" left-arrow @click-left="back"></van-nav-bar>
     <div class="card">
       <div class="card-title"><i class="van-icon van-icon-exchange" style="color:var(--primary)"></i>分数 → 位次换算</div>
-      <div class="form-row"><span class="label">省份</span><span class="value">{{rankProvince}}</span></div>
-      <div class="form-row"><span class="label">年份</span><span class="value">{{rankYear2}}</span></div>
-      <div class="form-row"><span class="label">科类</span><span class="value">{{rankCat}}</span></div>
+      <div class="form-row" @click="rankPickerType='province';rankPickerShow=true"><span class="label">省份</span><span class="value">{{rankProvince}}</span><i class="van-icon van-icon-arrow" style="color:#c0c4cc"></i></div>
+      <div class="form-row" @click="rankPickerType='year';rankPickerShow=true"><span class="label">年份</span><span class="value">{{rankYear2}}</span><i class="van-icon van-icon-arrow" style="color:#c0c4cc"></i></div>
+      <div class="form-row" @click="rankPickerType='cat';rankPickerShow=true"><span class="label">科类</span><span class="value">{{rankCat}}</span><i class="van-icon van-icon-arrow" style="color:#c0c4cc"></i></div>
       <div class="form-row"><span class="label">分数</span>
         <input v-model="rankScore" type="number" placeholder="输入高考分数" style="border:none;text-align:right;font-size:14px;width:120px;outline:none"></div>
       <van-button type="primary" block round style="margin-top:16px" @click="rankConvert">开始换算</van-button>
@@ -447,6 +497,69 @@ body{font-family:-apple-system,BlinkMacSystemFont,'PingFang SC','Helvetica Neue'
         <div v-for="o in rankResult.olds" :key="o.y" style="display:flex;justify-content:space-between;padding:6px 0;font-size:13px;color:var(--text2)">
           <span>{{o.y}}年 ≈</span><span style="color:var(--primary);font-weight:600">{{o.s}}分</span>
         </div>
+      </div>
+    </div>
+    <van-popup v-model:show="rankPickerShow" position="bottom" round>
+      <van-picker :columns="rankPickerColumns" @confirm="onRankPick" @cancel="rankPickerShow=false" :title="'选择'+(rankPickerType==='province'?'省份':rankPickerType==='year'?'年份':'科类')"></van-picker>
+    </van-popup>
+  </template>
+
+  <template v-else-if="view === 'fake'">
+    <van-nav-bar title="野鸡大学查询" left-arrow @click-left="back"></van-nav-bar>
+    <div class="card">
+      <div class="card-title"><i class="van-icon van-icon-warning-o" style="color:#dc2626"></i>防骗查询</div>
+      <p style="font-size:12px;color:var(--text2);line-height:1.7;margin-bottom:14px">输入学校名称，核验是否为教育部备案的正规高校。每年高考季都有不法分子用"野鸡大学"（虚假大学）招生诈骗，填报前务必核实！</p>
+      <van-field v-model="fakeKeyword" placeholder="输入学校名称查询" clearable style="background:#f8f9fb;border-radius:8px"></van-field>
+      <van-button type="danger" block round style="margin-top:14px" @click="checkFake">立即核验</van-button>
+    </div>
+    <div class="card" v-if="fakeResult !== null">
+      <div v-if="fakeResult.isFake" style="text-align:center;padding:20px">
+        <i class="van-icon van-icon-warning" style="font-size:48px;color:#dc2626;display:block"></i>
+        <div style="font-size:17px;font-weight:700;color:#dc2626;margin-top:12px">⚠ 疑似野鸡大学！</div>
+        <div style="font-size:13px;color:var(--text2);margin-top:8px">"{{fakeResult.name}}" 不在教育部备案名单中，请谨慎对待！</div>
+      </div>
+      <div v-else-if="fakeResult.isOfficial" style="text-align:center;padding:20px">
+        <i class="van-icon van-icon-success" style="font-size:48px;color:#10b981;display:block"></i>
+        <div style="font-size:17px;font-weight:700;color:#10b981;margin-top:12px">✅ 正规高校</div>
+        <div style="font-size:13px;color:var(--text2);margin-top:8px">"{{fakeResult.name}}" 是教育部备案的正规高校，可放心查询。</div>
+      </div>
+      <div v-else style="text-align:center;padding:20px">
+        <i class="van-icon van-icon-question" style="font-size:48px;color:#f59e0b;display:block"></i>
+        <div style="font-size:17px;font-weight:700;color:#f59e0b;margin-top:12px">未找到该校</div>
+        <div style="font-size:13px;color:var(--text2);margin-top:8px">请核对校名是否正确，或咨询当地教育考试院。</div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title"><i class="van-icon van-icon-warning-o" style="color:#dc2626"></i>常见野鸡大学警示名单</div>
+      <div class="fake-list">
+        <span class="fake-tag" v-for="f in fakes.slice(0,30)" :key="f">{{f}}</span>
+      </div>
+    </div>
+  </template>
+
+  <template v-else-if="view === 'policy'">
+    <van-nav-bar title="高考政策" left-arrow @click-left="back"></van-nav-bar>
+    <div class="card" style="padding:4px 12px">
+      <div class="uni-item" v-for="p in policyList" :key="p.key" @click="selPolicy=p;showPolicy=true">
+        <div style="flex:1"><div class="uni-name">{{p.name}}</div><div class="uni-meta">{{p.size}}字</div></div>
+        <i class="van-icon van-icon-arrow" style="color:#c0c4cc"></i>
+      </div>
+    </div>
+    <van-popup v-model:show="showPolicy" position="bottom" round style="height:85vh">
+      <div style="padding:16px 20px 30px;overflow-y:auto;height:100%">
+        <div style="font-size:18px;font-weight:700;margin-bottom:14px;text-align:center">{{selPolicy.name}}</div>
+        <div style="font-size:14px;line-height:1.9;white-space:pre-wrap">{{selPolicy.content}}</div>
+      </div>
+    </van-popup>
+  </template>
+
+  <template v-else-if="view === 'special'">
+    <van-nav-bar title="特殊类型招生" left-arrow @click-left="back"></van-nav-bar>
+    <div class="card" v-for="s in specials" :key="s.title">
+      <div class="card-title"><i :class="'van-icon van-icon-'+s.icon" :style="{color:s.color}"></i>{{s.title}}</div>
+      <p style="font-size:13px;color:var(--text2);line-height:1.7;margin:4px 0 12px">{{s.desc}}</p>
+      <div style="display:flex;flex-wrap:wrap;gap:8px">
+        <span v-for="i in s.items" :key="i" style="padding:4px 12px;background:#f3f4f6;border-radius:15px;font-size:12px">{{i}}</span>
       </div>
     </div>
   </template>
@@ -479,7 +592,11 @@ createApp({
       rankCat: '物理类',
       rankScore: '',
       rankResult: null,
+      rankPickerShow: false, rankPickerType: 'province',
+      scoreSegments: {},
       slYear: 2025,
+      slProvince: '福建', slProvPicker: false,
+      slProvinces: ['福建','北京','上海','广东','江苏','浙江','河南','四川','河北','湖南','湖北','山东'],
       picker: { show: false, type: '', columns: [], title: '' },
       form: { province: '', year: '2029', subjects: [], score: '', rank: '' },
       uniDetail: null,
@@ -499,10 +616,24 @@ createApp({
       universities: [], satisfaction: [], admissions: [], posts: [],
       ranks: {}, tests: {},
       testList: [],
+      fakeKeyword: '', fakeResult: null, fakes: [],
+      officialNames: [], policyList: [], selPolicy: {}, showPolicy: false,
+      specials: [
+        { title: '强基计划', icon: 'award-o', color: '#2563eb', desc: '39所双一流A类高校基础学科招生，高考85%+校测15%，本硕博衔接培养', items: ['北大','清华','复旦','浙大','上交','中科大','南大','武大','华科','西交','哈工大','北航'] },
+        { title: '综合评价', icon: 'balance-o', color: '#10b981', desc: '高考+校测+综合素质，多维度选拔', items: ['南方科技大学','上海科技大学','港中大深圳','昆山杜克','西交利物浦','深北莫'] },
+        { title: '专项计划', icon: 'shield-o', color: '#f59e0b', desc: '面向农村和脱贫地区学生，三大专项', items: ['国家专项','高校专项','地方专项'] },
+        { title: '公费师范生', icon: 'friends-o', color: '#8b5cf6', desc: '免学费住宿费+生活补助，毕业后定向从教6年', items: ['北师大','华东师大','东北师大','华中师大','陕西师大','西南大学'] },
+        { title: '军校招生', icon: 'shield-o', color: '#ef4444', desc: '需政审+军检+面试，本科提前批录取', items: ['国防科大','陆军工程','海军军医','空军军医','信息工程'] },
+      ],
     }
   },
   computed: {
     currentView() { return this.view },
+    rankPickerColumns() {
+      if (this.rankPickerType === 'province') return Object.keys(this.scoreSegments).length ? Object.keys(this.scoreSegments) : ['福建','北京','河北','江苏','浙江','山东','广东','湖北','湖南','四川','河南','安徽','辽宁','重庆']
+      if (this.rankPickerType === 'year') return ['2024','2023']
+      return ['物理类','历史类']
+    },
     tabs() {
       const t = [
         { view: 'home', label: '首页', icon: 'wap-home-o' },
@@ -524,6 +655,9 @@ createApp({
         { name: '院校满意度', icon: 'like-o', path: 'satisfaction' },
         { name: '心理测评', icon: 'smile-o', path: 'psychology' },
         { name: 'AI志愿助手', icon: 'chat-o', path: 'ai' },
+        { name: '野鸡大学', icon: 'warning-o', path: 'fake' },
+        { name: '高考政策', icon: 'description', path: 'policy' },
+        { name: '特殊类型', icon: 'award-o', path: 'special' },
       ]
     },
     tools() {
@@ -566,19 +700,65 @@ createApp({
       return (this.ranks[this.rankYear] || []).filter(r => r.rg === 'mainland').slice(0, 50)
     },
     slLines() {
+      // 各省批次线数据（特控线/本科线/专科线，物理/历史）
       const d = {
-        2025: [
-          { name: '特殊类型线', phys: 520, hist: 531, note: '强基/综评资格参考' },
-          { name: '本科批', phys: 441, hist: 450, note: '普通本科录取线' },
-          { name: '专科批', phys: 235, hist: 235, note: '高职高专录取线' },
-        ],
-        2024: [
-          { name: '特殊类型线', phys: 524, hist: 536, note: '强基/综评资格参考' },
-          { name: '本科批', phys: 443, hist: 431, note: '普通本科录取线' },
-          { name: '专科批', phys: 235, hist: 235, note: '高职高专录取线' },
-        ],
+        福建: {
+          2025: [ { name: '特殊类型线', phys: 520, hist: 531 }, { name: '本科批', phys: 441, hist: 450 }, { name: '专科批', phys: 235, hist: 235 } ],
+          2024: [ { name: '特殊类型线', phys: 524, hist: 536 }, { name: '本科批', phys: 443, hist: 431 }, { name: '专科批', phys: 235, hist: 235 } ],
+          2023: [ { name: '特殊类型线', phys: 518, hist: 531 }, { name: '本科批', phys: 431, hist: 453 }, { name: '专科批', phys: 220, hist: 220 } ],
+        },
+        北京: {
+          2025: [ { name: '特殊类型线', phys: 521, hist: 521 }, { name: '本科批', phys: 429, hist: 429 }, { name: '专科批', phys: 120, hist: 120 } ],
+          2024: [ { name: '特殊类型线', phys: 523, hist: 523 }, { name: '本科批', phys: 434, hist: 434 }, { name: '专科批', phys: 120, hist: 120 } ],
+        },
+        上海: {
+          2025: [ { name: '特殊类型线', phys: 505, hist: 505 }, { name: '本科批', phys: 402, hist: 402 }, { name: '专科批', phys: 100, hist: 100 } ],
+          2024: [ { name: '特殊类型线', phys: 503, hist: 503 }, { name: '本科批', phys: 403, hist: 403 }, { name: '专科批', phys: 100, hist: 100 } ],
+        },
+        广东: {
+          2025: [ { name: '特殊类型线', phys: 515, hist: 527 }, { name: '本科批', phys: 425, hist: 440 }, { name: '专科批', phys: 180, hist: 180 } ],
+          2024: [ { name: '特殊类型线', phys: 540, hist: 516 }, { name: '本科批', phys: 442, hist: 428 }, { name: '专科批', phys: 200, hist: 200 } ],
+        },
+        江苏: {
+          2025: [ { name: '特殊类型线', phys: 516, hist: 530 }, { name: '本科批', phys: 448, hist: 476 }, { name: '专科批', phys: 220, hist: 220 } ],
+          2024: [ { name: '特殊类型线', phys: 516, hist: 466 }, { name: '本科批', phys: 437, hist: 471 }, { name: '专科批', phys: 220, hist: 220 } ],
+        },
+        浙江: {
+          2025: [ { name: '特殊类型线', phys: 594, hist: 594 }, { name: '一段线', phys: 500, hist: 500 }, { name: '二段线', phys: 400, hist: 400 } ],
+          2024: [ { name: '特殊类型线', phys: 594, hist: 594 }, { name: '一段线', phys: 492, hist: 492 }, { name: '二段线', phys: 380, hist: 380 } ],
+        },
+        河南: {
+          2025: [ { name: '特殊类型线', phys: 500, hist: 517 }, { name: '本科批', phys: 435, hist: 467 }, { name: '专科批', phys: 185, hist: 185 } ],
+          2024: [ { name: '一本线', phys: 511, hist: 521 }, { name: '二本线', phys: 396, hist: 428 }, { name: '专科批', phys: 185, hist: 185 } ],
+        },
+        四川: {
+          2025: [ { name: '特殊类型线', phys: 494, hist: 503 }, { name: '本科批', phys: 435, hist: 455 }, { name: '专科批', phys: 200, hist: 200 } ],
+          2024: [ { name: '一本线', phys: 539, hist: 529 }, { name: '二本线', phys: 459, hist: 457 }, { name: '专科批', phys: 150, hist: 150 } ],
+        },
+        河北: {
+          2025: [ { name: '特殊类型线', phys: 483, hist: 542 }, { name: '本科批', phys: 443, hist: 485 }, { name: '专科批', phys: 200, hist: 200 } ],
+          2024: [ { name: '特殊类型线', phys: 486, hist: 487 }, { name: '本科批', phys: 449, hist: 448 }, { name: '专科批', phys: 200, hist: 200 } ],
+        },
+        湖南: {
+          2025: [ { name: '特殊类型线', phys: 479, hist: 507 }, { name: '本科批', phys: 445, hist: 471 }, { name: '专科批', phys: 200, hist: 200 } ],
+          2024: [ { name: '特殊类型线', phys: 473, hist: 455 }, { name: '本科批', phys: 432, hist: 469 }, { name: '专科批', phys: 200, hist: 200 } ],
+        },
+        湖北: {
+          2025: [ { name: '特殊类型线', phys: 522, hist: 541 }, { name: '本科批', phys: 437, hist: 436 }, { name: '专科批', phys: 200, hist: 200 } ],
+          2024: [ { name: '特殊类型线', phys: 514, hist: 525 }, { name: '本科批', phys: 436, hist: 429 }, { name: '专科批', phys: 200, hist: 200 } ],
+        },
+        山东: {
+          2025: [ { name: '特殊类型线', phys: 485, hist: 485 }, { name: '一段线', phys: 444, hist: 444 }, { name: '二段线', phys: 150, hist: 150 } ],
+          2024: [ { name: '特殊类型线', phys: 521, hist: 521 }, { name: '一段线', phys: 444, hist: 444 }, { name: '二段线', phys: 150, hist: 150 } ],
+        },
       }
-      return d[this.slYear] || d[2025]
+      const prov = d[this.slProvince] || d['福建']
+      const lines = prov[this.slYear] || prov[2025]
+      // 补充note
+      return lines.map(l => {
+        const notes = { '特殊类型线': '强基/综评资格参考', '本科批': '普通本科录取线', '专科批': '高职高专录取线', '一本线': '本科一批录取线', '二本线': '本科二批录取线', '一段线': '本科一段（3+3）', '二段线': '专科段（3+3）' }
+        return { ...l, note: notes[l.name] || '' }
+      })
     },
     volResult() {
       const score = Number(this.profile.score) || 0
@@ -757,29 +937,70 @@ createApp({
       if (q.includes('强基')) return '强基计划是39所双一流A类高校的基础学科招生，聚焦数学、物理、化学、生物等。高考85%+校测15%。'
       return '建议先设置高考信息（省份+分数），我就能给出针对性建议。也可以问我：我的分数能上什么大学？'
     },
+    printVolunteer() {
+      if (!this.profile.score) return vant.showToast('请先设置高考信息')
+      this.view = 'print'
+      window.scrollTo(0, 0)
+    },
+    doPrint() {
+      window.print()
+    },
+    onSlProv({ selectedOptions }) {
+      this.slProvince = selectedOptions[0].text
+      this.slProvPicker = false
+    },
+    checkFake() {
+      const name = this.fakeKeyword.trim()
+      if (!name) return vant.showToast('请输入学校名称')
+      // 1. 查野鸡名单
+      const isFake = this.fakes.includes(name) || this.fakes.some(f => name.includes(f) || f.includes(name))
+      // 2. 查官方名单（含模糊）
+      const isOfficial = this.officialNames.includes(name) || this.officialNames.some(n => n.includes(name) && name.length >= 4)
+      if (isFake) { this.fakeResult = { name, isFake: true, isOfficial: false }; return }
+      if (isOfficial) { this.fakeResult = { name, isFake: false, isOfficial: true }; return }
+      this.fakeResult = { name, isFake: false, isOfficial: false }
+    },
+    onRankPick({ selectedOptions }) {
+      const val = selectedOptions[0].text
+      if (this.rankPickerType === 'province') this.rankProvince = val
+      else if (this.rankPickerType === 'year') this.rankYear2 = val
+      else this.rankCat = val
+      this.rankPickerShow = false
+    },
     rankConvert() {
       const s = Number(this.rankScore)
       if (!s) return vant.showToast('请输入分数')
-      // 内置福建一分一段关键数据(2024物理类)
-      const segs = [
-        { mn: 680, mx: 750, rank: '1~45', surpass: '99.99%' },
-        { mn: 670, mx: 679, rank: '46~340', surpass: '99.8%' },
-        { mn: 660, mx: 669, rank: '341~900', surpass: '99.5%' },
-        { mn: 650, mx: 659, rank: '901~1900', surpass: '99.0%' },
-        { mn: 640, mx: 649, rank: '1901~3200', surpass: '98.4%' },
-        { mn: 630, mx: 639, rank: '3201~4800', surpass: '97.5%' },
-        { mn: 620, mx: 629, rank: '4801~6700', surpass: '96.5%' },
-        { mn: 610, mx: 619, rank: '6701~9000', surpass: '95.3%' },
-        { mn: 600, mx: 609, rank: '9001~11500', surpass: '94.0%' },
-        { mn: 580, mx: 599, rank: '11501~16500', surpass: '91.5%' },
-        { mn: 550, mx: 579, rank: '16501~25000', surpass: '87.0%' },
-        { mn: 520, mx: 549, rank: '25001~36000', surpass: '81.0%' },
-        { mn: 500, mx: 519, rank: '36001~45000', surpass: '77.0%' },
-        { mn: 470, mx: 499, rank: '45001~58000', surpass: '70.0%' },
-        { mn: 441, mx: 469, rank: '58001~70000', surpass: '65.0%' },
+      // 用真实28省一分一段数据查询
+      const provData = this.scoreSegments[this.rankProvince] || {}
+      const yearData = provData[this.rankYear2] || {}
+      const catData = yearData[this.rankCat] || []
+      if (catData.length) {
+        let found = null
+        for (const seg of catData) {
+          if (s >= seg.mn && s <= seg.mx) { found = seg; break }
+        }
+        if (found) {
+          this.rankResult = {
+            rankText: found.rank && found.rank !== '-' ? found.rank + ' 名' : '未获取到精确位次',
+            surpass: found.surpass || '',
+            olds: (found.olds || []).map(o => ({ y: o.y, s: o.s })),
+          }
+          return
+        }
+      }
+      // 无数据时的兜底：内置福建参考
+      const fallback = [
+        { mn: 680, mx: 750, rank: '1~45', surpass: '99.99%' }, { mn: 670, mx: 679, rank: '46~340', surpass: '99.8%' },
+        { mn: 660, mx: 669, rank: '341~900', surpass: '99.5%' }, { mn: 650, mx: 659, rank: '901~1900', surpass: '99.0%' },
+        { mn: 640, mx: 649, rank: '1901~3200', surpass: '98.4%' }, { mn: 630, mx: 639, rank: '3201~4800', surpass: '97.5%' },
+        { mn: 620, mx: 629, rank: '4801~6700', surpass: '96.5%' }, { mn: 610, mx: 619, rank: '6701~9000', surpass: '95.3%' },
+        { mn: 600, mx: 609, rank: '9001~11500', surpass: '94.0%' }, { mn: 580, mx: 599, rank: '11501~16500', surpass: '91.5%' },
+        { mn: 550, mx: 579, rank: '16501~25000', surpass: '87.0%' }, { mn: 520, mx: 549, rank: '25001~36000', surpass: '81.0%' },
       ]
-      const found = segs.find(x => s >= x.mn && s <= x.mx)
-      this.rankResult = found ? { rankText: found.rank + ' 名', surpass: found.surpass, olds: [{ y: '2023', s: s - 3 }, { y: '2022', s: s - 8 }] } : { rankText: '未查询到', olds: [] }
+      const fb = fallback.find(x => s >= x.mn && s <= x.mx)
+      this.rankResult = fb
+        ? { rankText: fb.rank + ' 名', surpass: fb.surpass + '（参考值）', olds: [{ y: '2023', s: s - 3 }, { y: '2022', s: s - 8 }] }
+        : { rankText: '未查询到，请选择有数据的省份/年份', olds: [] }
     },
   },
   async mounted() {
@@ -806,6 +1027,14 @@ createApp({
       for (const y of [2025, 2024, 2023]) {
         this.ranks[y] = await load('rank_' + y + '.json')
       }
+      // 加载野鸡大学+政策
+      try {
+        this.fakes = await load('fake_universities.json')
+        this.officialNames = await load('official_names.json')
+        const policies = await load('policies.json')
+        this.policyList = Object.entries(policies).map(([key, content]) => ({ key, name: key.replace(/\.md$/, ''), content, size: content.length }))
+        this.scoreSegments = await load('score_segments.json')
+      } catch (e) { console.log('辅助数据加载失败:', e) }
       console.log('数据加载完成: 大学' + unis.length + ' 满意度' + sat.length + ' 录取' + adm.length + ' 建议' + posts.length)
     } catch (e) {
       console.error('数据加载失败:', e)
